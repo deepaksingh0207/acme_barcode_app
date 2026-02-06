@@ -13,7 +13,7 @@ class LoginScreen extends StatefulWidget {
 class LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
-  final iptEmployeeId = TextEditingController(text: "20000");
+  final iptEmployeeId = TextEditingController(text: "2020");
   final iptPassword = TextEditingController(text: "12345678");
 
   @override

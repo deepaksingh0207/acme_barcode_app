@@ -168,6 +168,48 @@ class DashboardState extends State<Dashboard> {
                           ),
                           child: InkWell(
                             onTap: () {
+                              _showDispatchOptions();
+                            },
+                            child: Container(
+                              height: 120,
+                              padding: EdgeInsets.all(16),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 50,
+                                    child: Image.asset(
+                                      "assets/images/dispatch.png",
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    "Dispatch",
+                                    style: TextStyle(fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: 20),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Card(
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: InkWell(
+                            onTap: () {
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
@@ -192,48 +234,6 @@ class DashboardState extends State<Dashboard> {
                                   SizedBox(height: 10),
                                   Text(
                                     "Production Confirm",
-                                    style: TextStyle(fontSize: 13),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: 20),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Card(
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: InkWell(
-                            onTap: () {
-                              _showDispatchOptions();
-                            },
-                            child: Container(
-                              height: 120,
-                              padding: EdgeInsets.all(16),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SizedBox(
-                                    width: double.infinity,
-                                    height: 50,
-                                    child: Image.asset(
-                                      "assets/images/dispatch.png",
-                                      fit: BoxFit.contain,
-                                    ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  Text(
-                                    "Dispatch",
                                     style: TextStyle(fontSize: 13),
                                   ),
                                 ],
