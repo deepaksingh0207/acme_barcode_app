@@ -4,52 +4,56 @@ import 'package:acme/screens/login.dart';
 import 'package:acme/screens/dashboard.dart';
 import 'package:acme/screens/change_password.dart';
 
-class HUScanScreen extends StatefulWidget {
+class ReworkScreen extends StatefulWidget {
   @override
-  HUScanState createState() => HUScanState();
+  ReworkState createState() => ReworkState();
 }
 
-class HUScanState extends State<HUScanScreen> {
+class ReworkState extends State<ReworkScreen> {
   bool _isLoading = false;
+  int? activeItemId;
   String? _huno;
   String? _aufnr;
-  List<String> _respBarcodes = [];
+  List<Map<String, dynamic>> _respBarcodes = [];
 
-  final iptBarcode = TextEditingController(text: "1000000036359");
-  final api = BarcodeInfoAPI();
+  final iptSono = TextEditingController(text: "1000000036359");
+  final api = ReworkAPI();
 
   @override
   void initState() {
     super.initState();
 
     PM75Scanner.init((qrCode) async {
-      if (!mounted) return;
-      if (_isLoading) return;
       if (qrCode == "READ_FAIL") return;
-      setState(() => iptBarcode.text = qrCode);
-      await _getQrInfo(barCode: qrCode);
+      if (!mounted || _isLoading) return;
+      await _getSOInfo(sono: qrCode);
     });
   }
 
-  Future<void> _getQrInfo({String barCode = "", bool isDelete = false}) async {
+  Future<void> _getSOInfo({String sono = ""}) async {
     setState(() => _isLoading = true);
     try {
-      if (barCode == "") {
-        barCode = iptBarcode.text;
+      if (sono == "") {
+        sono = iptSono.text;
       }
-      final result = await api.info(barcode: barCode, delete: isDelete);
+      final result = await api.soInfo(soNo: sono);
       if (result.status != "S") {
         DialogHelper.showMessage(
           context,
           title: "Error",
           message: result.message,
         );
+      } else {
+        setState(() {
+          _huno = result.huno;
+          _aufnr = result.aufnr;
+          iptSono.text = sono;
+
+          _respBarcodes = result.barcode.map<Map<String, dynamic>>((e) {
+            return {"value": e, "selected": false};
+          }).toList();
+        });
       }
-      setState(() {
-        _respBarcodes = result.barcode;
-        _huno = result.huno;
-        _aufnr = result.aufnr;
-      });
     } catch (e) {
       DialogHelper.showMessage(context, title: "Error", message: e.toString());
     }
@@ -58,38 +62,48 @@ class HUScanState extends State<HUScanScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    iptBarcode.dispose();
-    super.dispose();
+  Future<void> _confirmProduction() async {
+    final selected = _respBarcodes.firstWhere(
+      (e) => e["selected"] == true,
+      orElse: () => {},
+    );
+
+    if (selected.isEmpty) {
+      DialogHelper.showMessage(
+        context,
+        title: "Warning",
+        message: "Please select a barcode for rework",
+      );
+      return;
+    }
+
+    final selectedBarcode = selected["value"];
+
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await api.rework(barcode: selectedBarcode);
+
+      if (result.status == "S") {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(result.message)));
+      } else {
+        DialogHelper.showMessage(
+          context,
+          title: "Error",
+          message: result.message,
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
-  void _showBarcodePopup() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Scanned Barcodes"),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: _respBarcodes.length,
-            itemBuilder: (_, i) {
-              return ListTile(
-                leading: const Icon(Icons.qr_code),
-                title: Text(_respBarcodes[i]),
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
-          ),
-        ],
-      ),
-    );
+  @override
+  void dispose() {
+    iptSono.dispose();
+    super.dispose();
   }
 
   @override
@@ -171,7 +185,7 @@ class HUScanState extends State<HUScanScreen> {
                     SizedBox(height: 20),
 
                     Text(
-                      "Barcode Information",
+                      "Rework",
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -186,7 +200,7 @@ class HUScanState extends State<HUScanScreen> {
                       children: [
                         Expanded(
                           child: TextField(
-                            controller: iptBarcode,
+                            controller: iptSono,
                             decoration: const InputDecoration(
                               labelText: "Enter / Scan Barcode",
                               enabledBorder: UnderlineInputBorder(
@@ -211,7 +225,7 @@ class HUScanState extends State<HUScanScreen> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
-                            onPressed: _isLoading ? null : _getQrInfo,
+                            onPressed: _isLoading ? null : _getSOInfo,
                             child: const Icon(Icons.qr_code_scanner),
                           ),
                         ),
@@ -222,7 +236,7 @@ class HUScanState extends State<HUScanScreen> {
 
                     if (_respBarcodes.isNotEmpty)
                       GestureDetector(
-                        onTap: _showBarcodePopup,
+                        // onTap: _showBarcodePopup,
                         child: Card(
                           elevation: 3,
                           shape: RoundedRectangleBorder(
@@ -290,11 +304,74 @@ class HUScanState extends State<HUScanScreen> {
                           ),
                         ),
                       ),
+
+                    if (_respBarcodes.isNotEmpty)
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: _respBarcodes.length,
+                          itemBuilder: (context, i) {
+                            final item = _respBarcodes[i];
+
+                            return InkWell(
+                              onTap: () {
+                                setState(() {
+                                  // clear previous selection
+                                  for (var e in _respBarcodes) {
+                                    e["selected"] = false;
+                                  }
+                                  // select only this one
+                                  item["selected"] = true;
+                                });
+                              },
+                              child: Card(
+                                elevation: 2,
+                                color: item["selected"]
+                                    ? Colors.indigo.withOpacity(0.18)
+                                    : Colors.white,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                    horizontal: 12,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        item["selected"]
+                                            ? Icons.radio_button_checked
+                                            : Icons.radio_button_off,
+                                        color: item["selected"]
+                                            ? Colors.indigo
+                                            : Colors.grey,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        item["value"],
+                                        style: const TextStyle(fontSize: 14),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                   ],
                 ),
               ),
             ),
           ],
+        ),
+        bottomNavigationBar: Container(
+          color: Colors.transparent,
+          padding: const EdgeInsets.all(12),
+          child: SizedBox(
+            height: 50,
+            child: ElevatedButton(
+              onPressed: _confirmProduction,
+              child: const Text("Post for Rework"),
+            ),
+          ),
         ),
       ),
     );

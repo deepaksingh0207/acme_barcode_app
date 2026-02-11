@@ -1,6 +1,6 @@
 import 'package:acme/api.dart';
-import 'package:acme/screens/dashboard.dart';
 import 'package:flutter/material.dart';
+import 'package:acme/screens/dashboard.dart';
 
 class ChangePassword extends StatefulWidget {
   @override
@@ -10,6 +10,7 @@ class ChangePassword extends StatefulWidget {
 class ChangePasswordState extends State<ChangePassword> {
   bool _newObscure = true;
   bool _isLoading = false;
+  final api = ResetPasswordAPI();
   final iptPassword = TextEditingController();
 
   String? employeeId;
@@ -40,7 +41,7 @@ class ChangePasswordState extends State<ChangePassword> {
         children: [
           Positioned.fill(
             child: Image.asset(
-              "assets/images/bg.png", // your bg image
+              "assets/images/bg.png",
               fit: BoxFit.cover,
             ),
           ),
@@ -48,10 +49,7 @@ class ChangePasswordState extends State<ChangePassword> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(
-                  padding: EdgeInsets.only(
-                    left: 24,
-                    right: 24,
-                  ),
+                  padding: EdgeInsets.only(left: 24, right: 24),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
                       minHeight: constraints.maxHeight,
@@ -103,13 +101,31 @@ class ChangePasswordState extends State<ChangePassword> {
                                       final password = iptPassword.text.trim();
 
                                       try {
-                                        final result =
-                                            await ResetPasswordAPI.reset(
-                                              employeeId: employeeId!,
-                                              password: password,
-                                            );
+                                        final result = await api.reset(
+                                          employeeId: employeeId!,
+                                          password: password,
+                                        );
 
-                                        if (result["STATUS"] == "S") {
+                                        if (result.status == "S") {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                result.message,
+                                                style: TextStyle(
+                                                  color: Color(0xFF333D79),
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              backgroundColor: Color(
+                                                0xFFFAEBEF,
+                                              ),
+                                              behavior:
+                                                  SnackBarBehavior.floating,
+                                              elevation: 0,
+                                            ),
+                                          );
                                           Navigator.pushReplacement(
                                             context,
                                             MaterialPageRoute(
@@ -120,9 +136,7 @@ class ChangePasswordState extends State<ChangePassword> {
                                           DialogHelper.showMessage(
                                             context,
                                             title: "Error",
-                                            message:
-                                                result["MESSAGE"] ??
-                                                "Password Change failed",
+                                            message: result.message,
                                           );
                                         }
                                       } catch (e) {

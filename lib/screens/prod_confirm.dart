@@ -1,7 +1,7 @@
 import 'package:acme/api.dart';
-import 'package:acme/screens/dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:acme/screens/login.dart';
+import 'package:acme/screens/dashboard.dart';
 import 'package:acme/screens/change_password.dart';
 
 class ProdConfirmScreen extends StatefulWidget {
@@ -12,14 +12,11 @@ class ProdConfirmScreen extends StatefulWidget {
 class ProdConfirmState extends State<ProdConfirmScreen> {
   bool _isLoading = false;
 
-  String? _currentAufnr;
-
   final List<Map<String, dynamic>> scanSessions = [];
-
   final TextEditingController iptBarcode = TextEditingController(
-    text: "1000000019994",
+    text: "1000000036527",
   );
-  final api = HuAPI();
+  final api = ProductionConfirmationAPI();
 
   @override
   void initState() {
@@ -36,9 +33,7 @@ class ProdConfirmState extends State<ProdConfirmScreen> {
 
   bool _barcodeExists(String barcode) {
     for (final session in scanSessions) {
-      for (final b in session["barcodes"]) {
-        if (b["BARCODE"] == barcode) return true;
-      }
+      if (session["huno"] == barcode) return true;
     }
     return false;
   }
@@ -48,27 +43,24 @@ class ProdConfirmState extends State<ProdConfirmScreen> {
 
     try {
       if (barCode.isEmpty) barCode = iptBarcode.text.trim();
-      if (barCode.isEmpty) return;
+      if (barCode.isEmpty) {
+        _isLoading = false;
+        return;
+      }
 
       final result = await api.scan(barcode: barCode, delete: isDelete);
-
       if (result.status != "S") {
         DialogHelper.showMessage(
           context,
           title: "Error",
           message: result.message,
         );
+        _isLoading = false;
         return;
       }
 
-      if (isDelete) return;
-
-      if (_currentAufnr != null && _currentAufnr != result.aufnr) {
-        DialogHelper.showMessage(
-          context,
-          title: "Error",
-          message: "Different Production Order not allowed",
-        );
+      if (isDelete) {
+        _isLoading = false;
         return;
       }
 
@@ -78,10 +70,9 @@ class ProdConfirmState extends State<ProdConfirmScreen> {
           title: "Error",
           message: "Barcode already scanned",
         );
+        _isLoading = false;
         return;
       }
-
-      _currentAufnr ??= result.aufnr;
 
       scanSessions.add({
         "barcodes": result.barcode,
@@ -91,13 +82,11 @@ class ProdConfirmState extends State<ProdConfirmScreen> {
     } catch (e) {
       DialogHelper.showMessage(context, title: "Error", message: e.toString());
     }
-
     if (mounted) setState(() => _isLoading = false);
   }
 
   Future<void> _deleteBarcode(int sessionIndex, int barcodeIndex) async {
     final barcode = scanSessions[sessionIndex]["barcodes"][barcodeIndex];
-
     final result = await api.scan(barcode: barcode, delete: true);
 
     if (result.status != "S") {
@@ -114,10 +103,6 @@ class ProdConfirmState extends State<ProdConfirmScreen> {
 
       if (scanSessions[sessionIndex]["barcodes"].isEmpty) {
         scanSessions.removeAt(sessionIndex);
-
-        if (scanSessions.isEmpty) {
-          _currentAufnr = null;
-        }
       }
     });
   }
@@ -166,9 +151,12 @@ class ProdConfirmState extends State<ProdConfirmScreen> {
 
   Future<void> _confirmProduction() async {
     setState(() => _isLoading = true);
-
+    List<Map<String, String>> aufnrlist = scanSessions
+        .where((s) => s["aufnr"] != null)
+        .map((s) => {"AUFNR": s["aufnr"].toString()})
+        .toList();
     try {
-      final result = await api.confirm(aufnr: _currentAufnr!);
+      final result = await api.confirm(aufnrList: aufnrlist);
       if (result.status == "S") {
         setState(() {
           scanSessions.clear();
@@ -188,6 +176,10 @@ class ProdConfirmState extends State<ProdConfirmScreen> {
               behavior: SnackBarBehavior.floating,
               elevation: 0,
             ),
+          );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => Dashboard()),
           );
         }
       } else {
@@ -263,6 +255,13 @@ class ProdConfirmState extends State<ProdConfirmScreen> {
                                   builder: (_) => LoginScreen(),
                                 ),
                               );
+                            } else if (value == "profile") {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ChangePassword(),
+                                ),
+                              );
                             } else if (value == "password") {
                               Navigator.push(
                                 context,
@@ -273,6 +272,10 @@ class ProdConfirmState extends State<ProdConfirmScreen> {
                             }
                           },
                           itemBuilder: (_) => const [
+                            PopupMenuItem(
+                              value: "profile",
+                              child: Text("Profile"),
+                            ),
                             PopupMenuItem(
                               value: "password",
                               child: Text("Change Password"),
@@ -289,7 +292,7 @@ class ProdConfirmState extends State<ProdConfirmScreen> {
                     const SizedBox(height: 20),
 
                     const Text(
-                      "Production Confirmation",
+                      "Production Order Receipt",
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,

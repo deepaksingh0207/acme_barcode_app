@@ -11,6 +11,7 @@ class RegisterScreen extends StatefulWidget {
 class RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
+  final api = RegisterAPI();
   final iptEmployeeId = TextEditingController(text: "20000");
   final iptPassword = TextEditingController(text: "12345678");
   final iptName = TextEditingController(text: "Willam Smith");
@@ -25,7 +26,7 @@ class RegisterScreenState extends State<RegisterScreen> {
         children: [
           Positioned.fill(
             child: Image.asset(
-              "assets/images/bg.png", // your bg image
+              "assets/images/bg.png",
               fit: BoxFit.cover,
             ),
           ),
@@ -188,14 +189,33 @@ class RegisterScreenState extends State<RegisterScreen> {
 
                                       try {
                                         final result =
-                                            await RegisterAPI.register(
+                                            await api.register(
                                               name: name,
                                               employeeId: employeeId,
                                               mobile: mobile,
                                               password: password,
                                             );
 
-                                        if (result["STATUS"] == "S") {
+                                        if (result.status == "S") {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                result.message,
+                                                style: TextStyle(
+                                                  color: Color(0xFF333D79),
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              backgroundColor: Color(
+                                                0xFFFAEBEF,
+                                              ),
+                                              behavior:
+                                                  SnackBarBehavior.floating,
+                                              elevation: 0,
+                                            ),
+                                          );
                                           Navigator.pushReplacement(
                                             context,
                                             MaterialPageRoute(
@@ -207,8 +227,7 @@ class RegisterScreenState extends State<RegisterScreen> {
                                             context,
                                             title: "Error",
                                             message:
-                                                result["MESSAGE"] ??
-                                                "Login failed",
+                                                result.message,
                                           );
                                         }
                                       } catch (e) {

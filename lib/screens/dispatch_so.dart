@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:acme/api.dart';
 import 'package:flutter/material.dart';
 import 'package:acme/screens/login.dart';
@@ -12,20 +13,33 @@ class DispatchSOScreen extends StatefulWidget {
 class DispatchSOState extends State<DispatchSOScreen> {
   bool _isLoading = false;
   List<Map<String, dynamic>> scanSessions = [];
-  final TextEditingController iptSono = TextEditingController(
-    text: "0000000001",
-  );
-  final api = DispatchAPI();
   int? activeItemId;
+  String? employeeId;
   bool _lock = false;
+  List<String> soList = [];
+
+  final iptSono = TextEditingController(text: "0000401692");
+  final api = DispatchAPI();
+
+  Future<void> _loadEmployee() async {
+    final id = await SessionManager.getEmployeeId();
+    setState(() {
+      employeeId = id;
+    });
+    setState(() => _isLoading = true);
+    final result = await api.soList(appUser: employeeId!);
+    soList = result.soList;
+    if (mounted) setState(() => _isLoading = false);
+  }
 
   @override
   void initState() {
     super.initState();
+    _loadEmployee();
+
     PM75Scanner.init((qrCode) async {
-      if (!mounted || _isLoading) return;
       if (qrCode == "READ_FAIL") return;
-      if (activeItemId == null) return;
+      if (!mounted || _isLoading) return;
       if (ignoreOnSaturate()) return;
       if (_lock) {
         await _getScanInfo(sono: qrCode);
@@ -33,6 +47,31 @@ class DispatchSOState extends State<DispatchSOScreen> {
         await _getSOInfo(sono: qrCode);
       }
     });
+  }
+
+  Future<void> _getSOInfo({String sono = ""}) async {
+    setState(() => _isLoading = true);
+    if (sono == "") {
+      sono = iptSono.text;
+    }
+
+    final result = await api.soInfo(soNo: sono);
+    if (result.status != "S") {
+      DialogHelper.showMessage(
+        context,
+        title: "Error",
+        message: result.message,
+      );
+    } else {
+      scanSessions = result.soInfo.map((e) {
+        return {...e, "barcode": <String>[], "huno": <String>[]};
+      }).toList();
+      setState(() {
+        _lock = true;
+        iptSono.text = sono;
+      });
+    }
+    if (mounted) setState(() => _isLoading = false);
   }
 
   Future<void> _getScanInfo({String sono = ""}) async {
@@ -71,33 +110,6 @@ class DispatchSOState extends State<DispatchSOScreen> {
     if (mounted) setState(() => _isLoading = false);
   }
 
-  Future<void> _getSOInfo({String sono = ""}) async {
-    setState(() => _isLoading = true);
-    try {
-      if (sono == "") {
-        sono = iptSono.text;
-      }
-      final result = await api.so(soNo: sono);
-
-      if (result.status != "S") {
-        DialogHelper.showMessage(
-          context,
-          title: "Error",
-          message: result.message,
-        );
-        return;
-      }
-      scanSessions = result.bcList.map((e) {
-        return {...e, "barcode": <String>[], "huno": <String>[]};
-      }).toList();
-      setState(() => _lock = true);
-    } catch (e) {
-      DialogHelper.showMessage(context, title: "Error", message: e.toString());
-    }
-
-    if (mounted) setState(() => _isLoading = false);
-  }
-
   bool ignoreOnSaturate() {
     final item = scanSessions[activeItemId!];
     final int dispatchQty = double.parse(item["ZMENG"].toString()).toInt();
@@ -111,6 +123,61 @@ class DispatchSOState extends State<DispatchSOScreen> {
       return false;
     }
     return true;
+  }
+
+  Future<void> _confirmProduction({String sono = ""}) async {
+    setState(() => _isLoading = true);
+
+    try {
+      if (sono == "") {
+        sono = iptSono.text;
+      }
+      final result = await api.soConfirm(soNo: sono);
+      if (result.status == "S") {
+        setState(() {
+          scanSessions.clear();
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                result.message,
+                style: TextStyle(
+                  color: Color(0xFF333D79),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              backgroundColor: Color(0xFFFAEBEF),
+              behavior: SnackBarBehavior.floating,
+              elevation: 0,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          DialogHelper.showMessage(
+            context,
+            title: "Error",
+            message: result.message.isNotEmpty
+                ? result.message
+                : "Confirm failed",
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        DialogHelper.showMessage(
+          context,
+          title: "Error",
+          message: e.toString(),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -189,6 +256,13 @@ class DispatchSOState extends State<DispatchSOScreen> {
                                   builder: (_) => LoginScreen(),
                                 ),
                               );
+                            } else if (value == "profile") {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ChangePassword(),
+                                ),
+                              );
                             } else if (value == "password") {
                               Navigator.push(
                                 context,
@@ -199,6 +273,10 @@ class DispatchSOState extends State<DispatchSOScreen> {
                             }
                           },
                           itemBuilder: (_) => const [
+                            PopupMenuItem(
+                              value: "profile",
+                              child: Text("Profile"),
+                            ),
                             PopupMenuItem(
                               value: "password",
                               child: Text("Change Password"),
@@ -228,19 +306,48 @@ class DispatchSOState extends State<DispatchSOScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: TextField(
-                            controller: iptSono,
-                            decoration: const InputDecoration(
-                              labelText: "Enter SO",
-                              enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: Colors.grey),
-                              ),
-                              focusedBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: Colors.indigo),
-                              ),
-                            ),
+                          child: Autocomplete<String>(
+                            optionsBuilder: (TextEditingValue value) {
+                              if (value.text.isEmpty) {
+                                return soList; // show all on focus
+                              }
+
+                              return soList.where(
+                                (so) => so.contains(value.text),
+                              );
+                            },
+                            onSelected: (selection) {
+                              iptSono.text = selection;
+                            },
+                            fieldViewBuilder:
+                                (
+                                  context,
+                                  controller,
+                                  focusNode,
+                                  onFieldSubmitted,
+                                ) {
+                                  iptSono.text = controller.text;
+                                  return TextField(
+                                    controller: controller,
+                                    focusNode: focusNode,
+                                    decoration: const InputDecoration(
+                                      labelText: "Enter SO",
+                                      enabledBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      focusedBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: Colors.indigo,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
                           ),
                         ),
+
                         const SizedBox(width: 12),
 
                         SizedBox(
@@ -394,6 +501,17 @@ class DispatchSOState extends State<DispatchSOScreen> {
               ),
             ),
           ],
+        ),
+        bottomNavigationBar: Container(
+          color: Colors.transparent,
+          padding: const EdgeInsets.all(12),
+          child: SizedBox(
+            height: 50,
+            child: ElevatedButton(
+              onPressed: _confirmProduction,
+              child: const Text("Post Dispatch"),
+            ),
+          ),
         ),
       ),
     );

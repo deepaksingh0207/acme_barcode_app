@@ -1,12 +1,14 @@
-import 'package:acme/screens/dispatch_delivery.dart';
-import 'package:acme/screens/dispatch_so.dart';
-import 'package:acme/screens/dispatch_sto.dart';
-
 import 'login.dart';
 import 'change_password.dart';
 import 'package:flutter/material.dart';
+import 'package:acme/screens/scrap.dart';
+import 'package:acme/screens/rework.dart';
+import 'package:acme/screens/profile.dart';
+import 'package:acme/screens/dispatch_so.dart';
+import 'package:acme/screens/dispatch_sto.dart';
 import 'package:acme/screens/barcode_info.dart';
 import 'package:acme/screens/prod_confirm.dart';
+import 'package:acme/screens/dispatch_delivery.dart';
 
 class Dashboard extends StatefulWidget {
   @override
@@ -63,6 +65,53 @@ class DashboardState extends State<Dashboard> {
     );
   }
 
+  void _showRRSOptions() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Choose Dispatch Type"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.assignment),
+              title: const Text("Rework"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => ReworkScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.receipt_long),
+              title: const Text("Replace"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => DispatchDeliveryScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.swap_horiz),
+              title: const Text("Scrap"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => ScrapScreen()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -93,6 +142,13 @@ class DashboardState extends State<Dashboard> {
                               context,
                               MaterialPageRoute(builder: (_) => LoginScreen()),
                             );
+                          } else if (value == "profile") {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ProfileScreen(),
+                              ),
+                            );
                           } else if (value == "password") {
                             Navigator.push(
                               context,
@@ -103,6 +159,10 @@ class DashboardState extends State<Dashboard> {
                           }
                         },
                         itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: "profile",
+                            child: Text("Profile"),
+                          ),
                           PopupMenuItem(
                             value: "password",
                             child: Text("Change Password"),
@@ -168,7 +228,12 @@ class DashboardState extends State<Dashboard> {
                           ),
                           child: InkWell(
                             onTap: () {
-                              _showDispatchOptions();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => HUScanScreen(),
+                                ),
+                              );
                             },
                             child: Container(
                               height: 120,
@@ -180,13 +245,13 @@ class DashboardState extends State<Dashboard> {
                                     width: double.infinity,
                                     height: 50,
                                     child: Image.asset(
-                                      "assets/images/dispatch.png",
+                                      "assets/images/barcode-scanner.png",
                                       fit: BoxFit.contain,
                                     ),
                                   ),
                                   SizedBox(height: 10),
                                   Text(
-                                    "Dispatch",
+                                    "Sales Return",
                                     style: TextStyle(fontSize: 13),
                                   ),
                                 ],
@@ -234,6 +299,90 @@ class DashboardState extends State<Dashboard> {
                                   SizedBox(height: 10),
                                   Text(
                                     "Production Confirm",
+                                    style: TextStyle(fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: 20),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Card(
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: InkWell(
+                            onTap: () {
+                              _showRRSOptions();
+                            },
+                            child: Container(
+                              height: 120,
+                              padding: EdgeInsets.all(16),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 50,
+                                    child: Image.asset(
+                                      "assets/images/dispatch.png",
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    "Rework / Replace / Scrap",
+                                    style: TextStyle(fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: 20),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Card(
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: InkWell(
+                            onTap: () {
+                              _showDispatchOptions();
+                            },
+                            child: Container(
+                              height: 120,
+                              padding: EdgeInsets.all(16),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 50,
+                                    child: Image.asset(
+                                      "assets/images/dispatch.png",
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    "Dispatch SO / Delivery / STO",
                                     style: TextStyle(fontSize: 13),
                                   ),
                                 ],

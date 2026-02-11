@@ -13,8 +13,9 @@ class LoginScreen extends StatefulWidget {
 class LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
-  final iptEmployeeId = TextEditingController(text: "2020");
+  final iptEmployeeId = TextEditingController(text: "1992");
   final iptPassword = TextEditingController(text: "12345678");
+  final api = LoginAPI();
 
   @override
   Widget build(BuildContext context) {
@@ -30,10 +31,7 @@ class LoginScreenState extends State<LoginScreen> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(
-                  padding: EdgeInsets.only(
-                    left: 24,
-                    right: 24,
-                  ),
+                  padding: EdgeInsets.only(left: 24, right: 24),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
                       minHeight: constraints.maxHeight,
@@ -154,22 +152,24 @@ class LoginScreenState extends State<LoginScreen> {
                                       final password = iptPassword.text.trim();
 
                                       try {
-                                        final result = await LoginAPI.login(
+                                        final result = await api.login(
                                           employeeId: employeeId,
                                           password: password,
                                         );
 
-                                        if (result["STATUS"] == "S") {
+                                        if (result.status == "S") {
                                           await SessionManager.saveEmployeeId(
                                             employeeId,
+                                            result.mobile,
+                                            result.email,
+                                            result.name,
                                           );
                                           ScaffoldMessenger.of(
                                             context,
                                           ).showSnackBar(
                                             SnackBar(
                                               content: Text(
-                                                result["MESSAGE"] ??
-                                                    "Login Success",
+                                                result.message,
                                                 style: TextStyle(
                                                   color: Color(0xFF333D79),
                                                   fontWeight: FontWeight.w600,
@@ -193,9 +193,7 @@ class LoginScreenState extends State<LoginScreen> {
                                           DialogHelper.showMessage(
                                             context,
                                             title: "Error",
-                                            message:
-                                                result["MESSAGE"] ??
-                                                "Login failed",
+                                            message: result.message,
                                           );
                                         }
                                       } catch (e) {
