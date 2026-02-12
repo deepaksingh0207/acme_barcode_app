@@ -5,7 +5,6 @@ import 'package:acme/screens/scrap.dart';
 import 'package:acme/screens/rework.dart';
 import 'package:acme/screens/profile.dart';
 import 'package:acme/screens/dispatch_so.dart';
-import 'package:acme/screens/dispatch_sto.dart';
 import 'package:acme/screens/barcode_info.dart';
 import 'package:acme/screens/prod_confirm.dart';
 import 'package:acme/screens/dispatch_delivery.dart';
@@ -52,11 +51,11 @@ class DashboardState extends State<Dashboard> {
               leading: const Icon(Icons.swap_horiz),
               title: const Text("STO"),
               onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => DispatchSTOScreen()),
-                );
+                // Navigator.pop(context);
+                // Navigator.push(
+                //   context,
+                //   MaterialPageRoute(builder: (_) => DispatchSTOScreen()),
+                // );
               },
             ),
           ],
@@ -322,7 +321,7 @@ class DashboardState extends State<Dashboard> {
                           ),
                           child: InkWell(
                             onTap: () {
-                              _showRRSOptions();
+                              _showDispatchOptions();
                             },
                             child: Container(
                               height: 120,
@@ -340,7 +339,7 @@ class DashboardState extends State<Dashboard> {
                                   ),
                                   SizedBox(height: 10),
                                   Text(
-                                    "Rework / Replace / Scrap",
+                                    "Dispatch SO / Delivery / STO",
                                     style: TextStyle(fontSize: 13),
                                   ),
                                 ],
@@ -364,7 +363,7 @@ class DashboardState extends State<Dashboard> {
                           ),
                           child: InkWell(
                             onTap: () {
-                              _showDispatchOptions();
+                              _showRRSOptions();
                             },
                             child: Container(
                               height: 120,
@@ -382,7 +381,7 @@ class DashboardState extends State<Dashboard> {
                                   ),
                                   SizedBox(height: 10),
                                   Text(
-                                    "Dispatch SO / Delivery / STO",
+                                    "Rework / Replace / Scrap",
                                     style: TextStyle(fontSize: 13),
                                   ),
                                 ],

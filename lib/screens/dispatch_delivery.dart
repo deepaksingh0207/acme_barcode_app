@@ -1,7 +1,8 @@
+import 'dart:async';
 import 'package:acme/api.dart';
-import 'package:acme/screens/dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:acme/screens/login.dart';
+import 'package:acme/screens/dashboard.dart';
 import 'package:acme/screens/change_password.dart';
 
 class DispatchDeliveryScreen extends StatefulWidget {
@@ -11,111 +12,117 @@ class DispatchDeliveryScreen extends StatefulWidget {
 
 class DispatchDeliveryState extends State<DispatchDeliveryScreen> {
   bool _isLoading = false;
-  final List<Map<String, dynamic>> scanSessions = [
-    {
-      "sales_order_no": "123456",
-      "party_code": "123456",
-      "desc":
-          "Lorem Ipsum is simply dummy text of the printing and typesetting",
-      "dispatch_qty": "6",
-    },
-  ];
-  final TextEditingController iptSono = TextEditingController(text: "1");
-  final api = DispatchAPI();
+  List<Map<String, dynamic>> scanSessions = [];
+  int? activeItemId;
+  String? employeeId;
+  bool _lock = false;
+  List<String> soList = [];
 
-  @override
-  void initState() {
-    super.initState();
+  final iptSono = TextEditingController(text: "0000401692");
+  final iptHuno = TextEditingController();
+  final api = DispatchDeliveryScreenAPI();
 
-    PM75Scanner.init((qrCode) async {
-      if (!mounted || _isLoading) return;
-      if (qrCode == "READ_FAIL") return;
-
-      iptSono.text = qrCode;
-      await _getQrInfo(sono: qrCode);
+  Future<void> _loadEmployee() async {
+    final id = await SessionManager.getEmployeeId();
+    setState(() {
+      employeeId = id;
     });
-  }
-
-  Future<void> _getQrInfo({String sono = ""}) async {
     setState(() => _isLoading = true);
-
-    try {
-      if (sono.isEmpty) sono = iptSono.text.trim();
-      final result = await api.so(soNo: sono);
-
-      if (result.status != "S") {
-        DialogHelper.showMessage(
-          context,
-          title: "Error",
-          message: result.message,
-        );
-        return;
-      }
-      scanSessions.add({
-        "huno": result.huno,
-        "aufnr": result.aufnr,
-        "barcodes": result.barcode,
-      });
-    } catch (e) {
-      DialogHelper.showMessage(context, title: "Error", message: e.toString());
-    }
-
+    final result = await api.soList(appUser: employeeId!);
+    soList = result.soList;
     if (mounted) setState(() => _isLoading = false);
   }
 
-  // Future<void> _deleteBarcode(int sessionIndex, int barcodeIndex) async {
-  //   final barcode = scanSessions[sessionIndex]["barcodes"][barcodeIndex];
+  void _openHunoPopup(int idx) {
+    setState(() => activeItemId = idx);
 
-  //   final result = await api.scan(barcode: barcode, delete: true);
-
-  //   if (result.status != "S") {
-  //     DialogHelper.showMessage(
-  //       context,
-  //       title: "Error",
-  //       message: result.message,
-  //     );
-  //     return;
-  //   }
-
-  //   setState(() {
-  //     scanSessions[sessionIndex]["barcodes"].removeAt(barcodeIndex);
-
-  //     if (scanSessions[sessionIndex]["barcodes"].isEmpty) {
-  //       scanSessions.removeAt(sessionIndex);
-  //     }
-  //   });
-  // }
-
-  void _showBarcodePopup(int sessionIndex) {
     showDialog(
       context: context,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            final hunoList = scanSessions[idx]["huno"] as List;
+
             return AlertDialog(
-              title: const Text("Scanned Barcodes"),
+              title: const Text("Scanned HUNO"),
+
               content: SizedBox(
                 width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: scanSessions[sessionIndex]["dispatch_qty"],
-                  itemBuilder: (_, i) {
-                    final barcode =
-                        scanSessions[sessionIndex]["dispatch_qty"][i];
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: iptHuno,
+                            decoration: const InputDecoration(
+                              hintText: "Enter HUNO",
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: _isLoading ? null : _getScanInfo,
+                          child: const Text("Add"),
+                        ),
+                      ],
+                    ),
 
-                    return ListTile(
-                      leading: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () async {
-                          // await _deleteBarcode(sessionIndex, i);
-                          setDialogState(() {});
+                    const SizedBox(height: 12),
+
+                    /// 📋 Scrollable list (compact height)
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: hunoList.length,
+                        itemBuilder: (_, i) {
+                          final huno = hunoList[i];
+
+                          return ListTile(
+                            title: Text(huno),
+                            leading: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () async {
+                                final hunoToDelete = hunoList[i];
+
+                                // Optional: show loader dialog
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (_) => const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+
+                                final result = await api.dispatchDeleteScan(
+                                  soNo: scanSessions[idx]["VBELN"],
+                                  posNr: scanSessions[idx]["POSNR"],
+                                  barCode: hunoToDelete,
+                                );
+
+                                Navigator.pop(context); // close loader
+
+                                if (result.status == "S") {
+                                  setDialogState(() {
+                                    hunoList.removeAt(i);
+                                  });
+                                  setState(() {}); // refresh main screen
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(result.message)),
+                                  );
+                                }
+                              },
+                            ),
+                          );
                         },
                       ),
-                      title: Text(barcode),
-                    );
-                  },
+                    ),
+                  ],
                 ),
               ),
+
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
@@ -130,9 +137,246 @@ class DispatchDeliveryState extends State<DispatchDeliveryScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _loadEmployee();
+
+    PM75Scanner.init((qrCode) async {
+      if (qrCode == "READ_FAIL") return;
+      if (!mounted || _isLoading) return;
+      if (ignoreOnSaturate()) return;
+      if (_lock) {
+        await _getScanInfo(huno: qrCode);
+      } else {
+        await _getSOInfo(soNo: qrCode);
+      }
+    });
+  }
+
+  Future<void> _getSOInfo({String soNo = ""}) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    if (soNo.isNotEmpty) {
+      setState(() {
+        iptSono.text = soNo;
+      });
+    }
+    await Future.delayed(Duration.zero);
+    if (iptSono.text.isEmpty) {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+    final result = await api.soInfo(soNo: iptSono.text);
+    if (result.status != "S") {
+      DialogHelper.showMessage(
+        context,
+        title: "Error",
+        message: result.message,
+      );
+    } else {
+      scanSessions = result.soInfo.map((e) {
+        final rawBarcodeList = e["BARCODE_LIST"];
+
+        // Handle both "" and proper object cases safely
+        final List<Map<String, dynamic>> items =
+            rawBarcodeList is Map && rawBarcodeList["item"] is List
+            ? List<Map<String, dynamic>>.from(rawBarcodeList["item"])
+            : [];
+
+        // Optional but recommended: remove duplicate barcodes
+        final uniqueItems = {
+          for (var i in items) i["BARCODE"]: i,
+        }.values.toList();
+
+        // Build HUNO list from barcode entries
+        final hunoList = uniqueItems
+            .map((i) => i["HUNO"].toString())
+            .toSet()
+            .toList();
+
+        return {
+          ...e,
+          "BARCODE_LIST": {"item": uniqueItems},
+          "huno": hunoList,
+        };
+      }).toList();
+
+      setState(() {
+        _lock = true;
+      });
+    }
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _getScanInfo({String huno = ""}) async {
+    setState(() => _isLoading = true);
+    final item = scanSessions[activeItemId!];
+    final int dispatchQty = double.parse(item["ZMENG"].toString()).toInt();
+
+    try {
+      if (huno == "") {
+        huno = iptHuno.text;
+      }
+      final result = await api.dispatchScan(
+        soNo: item["VBELN"],
+        posNr: item["POSNR"],
+        qty: item["ZMENG"],
+        barCode: huno,
+      );
+      if (result.status != "S") {
+        DialogHelper.showMessage(
+          context,
+          title: "Error",
+          message: result.message,
+        );
+      } else {
+        final barcodes = item["BARCODE_LIST"]["item"] ?? [];
+        if ((result.barcode.length + barcodes.length) <= dispatchQty) {
+          setState(() {
+            final existing = item["BARCODE_LIST"]["item"] as List;
+
+            for (final barCode in result.barcode) {
+              if (!existing.any((e) => e["BARCODE"] == barCode)) {
+                existing.add({"HUNO": result.huno, "BARCODE": barCode});
+              }
+            }
+
+            if (!item["huno"].contains(result.huno)) {
+              item["huno"].add(result.huno);
+            }
+          });
+        } else {
+          DialogHelper.showMessage(
+            context,
+            title: "Error",
+            message: "Quantity Exceeds Max Capacity",
+          );
+          return;
+        }
+      }
+    } catch (e) {
+      DialogHelper.showMessage(context, title: "Error", message: e.toString());
+    }
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  bool ignoreOnSaturate() {
+    final item = scanSessions[activeItemId!];
+    final int dispatchQty = double.parse(item["ZMENG"].toString()).toInt();
+    final barcodes = item["BARCODE_LIST"]["item"] ?? [];
+    if (barcodes.length >= dispatchQty) {
+      DialogHelper.showMessage(
+        context,
+        title: "Limit reached",
+        message: "Dispatch quantity already fulfilled",
+      );
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _confirmProduction({String sono = ""}) async {
+    setState(() => _isLoading = true);
+
+    try {
+      if (sono.isNotEmpty) {
+        iptSono.text = sono;
+      }
+      if (iptSono.text.isEmpty) return;
+
+      final result = await api.soConfirm(soNo: sono);
+      if (result.status == "S") {
+        setState(() {
+          scanSessions.clear();
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                result.message,
+                style: TextStyle(
+                  color: Color(0xFF333D79),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              backgroundColor: Color(0xFFFAEBEF),
+              behavior: SnackBarBehavior.floating,
+              elevation: 0,
+            ),
+          );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => Dashboard()),
+          );
+        }
+      } else {
+        if (mounted) {
+          DialogHelper.showMessage(
+            context,
+            title: "Error",
+            message: result.message.isNotEmpty
+                ? result.message
+                : "Confirm failed",
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        DialogHelper.showMessage(
+          context,
+          title: "Error",
+          message: e.toString(),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
   void dispose() {
     iptSono.dispose();
     super.dispose();
+  }
+
+  Widget _buildProgress(int idx) {
+    final item = scanSessions[idx];
+    final dispatchQty = double.parse(item["ZMENG"].toString()).toInt();
+    final barcodes = item["BARCODE_LIST"]["item"] ?? [];
+    double progress = 0.0;
+    if (barcodes.length > 0) {
+      progress = barcodes.length / dispatchQty;
+    }
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        SizedBox(
+          width: 55,
+          height: 55,
+          child: GestureDetector(
+            onTap: () => _openHunoPopup(idx),
+            child: CircularProgressIndicator(
+              value: progress,
+              strokeWidth: 6,
+              backgroundColor: Colors.grey.shade300,
+              color: progress >= 1 ? Colors.green : Colors.blue,
+            ),
+          ),
+        ),
+        Text(
+          (barcodes.length).toString(),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
   }
 
   @override
@@ -141,7 +385,6 @@ class DispatchDeliveryState extends State<DispatchDeliveryScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => Dashboard()),
@@ -176,6 +419,13 @@ class DispatchDeliveryState extends State<DispatchDeliveryScreen> {
                                   builder: (_) => LoginScreen(),
                                 ),
                               );
+                            } else if (value == "profile") {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ChangePassword(),
+                                ),
+                              );
                             } else if (value == "password") {
                               Navigator.push(
                                 context,
@@ -186,6 +436,10 @@ class DispatchDeliveryState extends State<DispatchDeliveryScreen> {
                             }
                           },
                           itemBuilder: (_) => const [
+                            PopupMenuItem(
+                              value: "profile",
+                              child: Text("Profile"),
+                            ),
                             PopupMenuItem(
                               value: "password",
                               child: Text("Change Password"),
@@ -215,19 +469,47 @@ class DispatchDeliveryState extends State<DispatchDeliveryScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: TextField(
-                            controller: iptSono,
-                            decoration: const InputDecoration(
-                              labelText: "Enter SO",
-                              enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: Colors.grey),
-                              ),
-                              focusedBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: Colors.indigo),
-                              ),
-                            ),
+                          child: Autocomplete<String>(
+                            optionsBuilder: (TextEditingValue value) {
+                              if (value.text.isEmpty) {
+                                return soList;
+                              }
+                              return soList.where(
+                                (so) => so.contains(value.text),
+                              );
+                            },
+                            onSelected: (selection) {
+                              iptSono.text = selection;
+                            },
+                            fieldViewBuilder:
+                                (
+                                  context,
+                                  controller,
+                                  focusNode,
+                                  onFieldSubmitted,
+                                ) {
+                                  iptSono.text = controller.text;
+                                  return TextField(
+                                    controller: controller,
+                                    focusNode: focusNode,
+                                    decoration: const InputDecoration(
+                                      labelText: "Enter SO",
+                                      enabledBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      focusedBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: Colors.indigo,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
                           ),
                         ),
+
                         const SizedBox(width: 12),
 
                         SizedBox(
@@ -240,7 +522,10 @@ class DispatchDeliveryState extends State<DispatchDeliveryScreen> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
-                            onPressed: _isLoading ? null : _getQrInfo,
+                            onPressed: () {
+                              final sono = iptSono.text;
+                              _isLoading ? null : _getSOInfo(soNo: sono);
+                            },
                             child: const Icon(Icons.qr_code_scanner),
                           ),
                         ),
@@ -254,10 +539,16 @@ class DispatchDeliveryState extends State<DispatchDeliveryScreen> {
                         itemCount: scanSessions.length,
                         itemBuilder: (_, index) {
                           final session = scanSessions[index];
+                          final bool isActive = activeItemId == index;
 
                           return GestureDetector(
-                            // onTap: () => _showBarcodePopup(index),
+                            onTap: () {
+                              setState(() => activeItemId = index);
+                            },
                             child: Card(
+                              color: isActive
+                                  ? Colors.blue.shade50
+                                  : Colors.white,
                               elevation: 3,
                               margin: const EdgeInsets.symmetric(vertical: 8),
                               shape: RoundedRectangleBorder(
@@ -279,14 +570,13 @@ class DispatchDeliveryState extends State<DispatchDeliveryScreen> {
                                             TextSpan(
                                               children: [
                                                 const TextSpan(
-                                                  text: "Delivery No: ",
+                                                  text: "Party Code: ",
                                                   style: TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
                                                 TextSpan(
-                                                  text:
-                                                      "${session["sales_order_no"]}",
+                                                  text: "${session["POSNR"]}",
                                                   style: const TextStyle(
                                                     fontWeight:
                                                         FontWeight.normal,
@@ -307,8 +597,7 @@ class DispatchDeliveryState extends State<DispatchDeliveryScreen> {
                                                   ),
                                                 ),
                                                 TextSpan(
-                                                  text:
-                                                      "${session["sales_order_no"]}",
+                                                  text: "${session["VBELN"]}",
                                                   style: const TextStyle(
                                                     fontWeight:
                                                         FontWeight.normal,
@@ -319,51 +608,6 @@ class DispatchDeliveryState extends State<DispatchDeliveryScreen> {
                                           ),
 
                                           const SizedBox(height: 4),
-                                          Text.rich(
-                                            TextSpan(
-                                              children: [
-                                                const TextSpan(
-                                                  text: "Party Code: ",
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                                TextSpan(
-                                                  text:
-                                                      "${session["party_code"]}",
-                                                  style: const TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.normal,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-
-                                          const SizedBox(height: 4),
-
-                                          Text.rich(
-                                            TextSpan(
-                                              children: [
-                                                const TextSpan(
-                                                  text: "Description: ",
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                                TextSpan(
-                                                  text: "${session["desc"]}",
-                                                  style: const TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.normal,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-
-                                          const SizedBox(height: 4),
-
                                           Text.rich(
                                             TextSpan(
                                               children: [
@@ -375,7 +619,7 @@ class DispatchDeliveryState extends State<DispatchDeliveryScreen> {
                                                 ),
                                                 TextSpan(
                                                   text:
-                                                      "${session["dispatch_qty"]}",
+                                                      "${session["ZMENG"]} ${session["ZIEME"]}",
                                                   style: const TextStyle(
                                                     fontWeight:
                                                         FontWeight.normal,
@@ -384,12 +628,31 @@ class DispatchDeliveryState extends State<DispatchDeliveryScreen> {
                                               ],
                                             ),
                                           ),
+
+                                          const SizedBox(height: 4),
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              const Text(
+                                                "Description",
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                "${session["MAKTX"]}",
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.normal,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ],
                                       ),
                                     ),
-                                    CircleAvatar(
-                                      child: Text(session["dispatch_qty"]),
-                                    ),
+                                    _buildProgress(index),
                                   ],
                                 ),
                               ),
@@ -403,6 +666,17 @@ class DispatchDeliveryState extends State<DispatchDeliveryScreen> {
               ),
             ),
           ],
+        ),
+        bottomNavigationBar: Container(
+          color: Colors.transparent,
+          padding: const EdgeInsets.all(12),
+          child: SizedBox(
+            height: 50,
+            child: ElevatedButton(
+              onPressed: _confirmProduction,
+              child: const Text("Post Dispatch"),
+            ),
+          ),
         ),
       ),
     );

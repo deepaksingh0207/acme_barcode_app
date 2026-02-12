@@ -11,7 +11,7 @@ class RegisterScreen extends StatefulWidget {
 class RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
-  final api = RegisterAPI();
+  final api = RegisterScreenAPI();
   final iptEmployeeId = TextEditingController(text: "20000");
   final iptPassword = TextEditingController(text: "12345678");
   final iptName = TextEditingController(text: "Willam Smith");

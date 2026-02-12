@@ -17,7 +17,7 @@ class ReworkState extends State<ReworkScreen> {
   List<Map<String, dynamic>> _respBarcodes = [];
 
   final iptSono = TextEditingController(text: "1000000036359");
-  final api = ReworkAPI();
+  final api = ReworkScreenAPI();
 
   @override
   void initState() {

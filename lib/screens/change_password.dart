@@ -10,7 +10,7 @@ class ChangePassword extends StatefulWidget {
 class ChangePasswordState extends State<ChangePassword> {
   bool _newObscure = true;
   bool _isLoading = false;
-  final api = ResetPasswordAPI();
+  final api = ChangePasswordScreenAPI();
   final iptPassword = TextEditingController();
 
   String? employeeId;

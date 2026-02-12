@@ -238,29 +238,29 @@ class CommonApiResponse {
   }
 }
 
-class LoginAPI {
-  static const String loginKey = "User_Login";
-
-  Future<CommonApiResponse> login({
-    required String employeeId,
-    required String password,
-  }) async {
+class BaseApiService {
+  Future<CommonApiResponse> postRequest(
+    String apiKey,
+    String payloadKey,
+    Map<String, dynamic> inputData,
+  ) async {
     try {
-      final url = Uri.parse("${SAPConfig.authUrl}$loginKey");
+      final apiUrl = payloadKey.isEmpty ? SAPConfig.authUrl : SAPConfig.baseUrl;
+      final url = Uri.parse("$apiUrl$apiKey");
+      final body = payloadKey.isEmpty
+          ? {"INPUT_DATA": inputData}
+          : {payloadKey: inputData};
+
       final response = await http
-          .post(
-            url,
-            headers: SAPConfig.headers,
-            body: jsonEncode({
-              "INPUT_DATA": {"APP_USR": employeeId, "PASSWORD": password},
-            }),
-          )
+          .post(url, headers: SAPConfig.headers, body: jsonEncode(body))
           .timeout(const Duration(seconds: 30));
+
       if (response.statusCode == 200) {
         return CommonApiResponse.fromJson(
           jsonDecode(response.body) as Map<String, dynamic>,
         );
       }
+
       return CommonApiResponse.fromJson({
         "status": "E",
         "message": response.body.isNotEmpty
@@ -283,7 +283,21 @@ class LoginAPI {
   }
 }
 
-class RegisterAPI {
+class LoginScreenAPI extends BaseApiService {
+  static const String loginKey = "User_Login";
+
+  Future<CommonApiResponse> login({
+    required String employeeId,
+    required String password,
+  }) {
+    return postRequest(loginKey, "", {
+      "APP_USR": employeeId,
+      "PASSWORD": password,
+    });
+  }
+}
+
+class RegisterScreenAPI extends BaseApiService {
   static const String registerKey = "User_Signup";
 
   Future<CommonApiResponse> register({
@@ -291,589 +305,213 @@ class RegisterAPI {
     required String name,
     required String mobile,
     required String password,
-  }) async {
-    try {
-      final url = Uri.parse("${SAPConfig.authUrl}$registerKey");
-
-      final response = await http
-          .post(
-            url,
-            headers: SAPConfig.headers,
-            body: jsonEncode({
-              "INPUT_DATA": {
-                "APP_USR": employeeId,
-                "NAME": name,
-                "PASSWORD": password,
-                "MOBILE": mobile,
-              },
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
-      if (response.statusCode == 200) {
-        return CommonApiResponse.fromJson(
-          jsonDecode(response.body) as Map<String, dynamic>,
-        );
-      }
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "message": response.body.isNotEmpty
-            ? "[${response.statusCode}] ${response.body}"
-            : "Connectivity Failed",
-      });
-    } on TimeoutException {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 408,
-        "message": "Request timeout. Please try again.",
-      });
-    } catch (e) {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 500,
-        "message": e.toString(),
-      });
-    }
+  }) {
+    return postRequest(registerKey, "", {
+      "APP_USR": employeeId,
+      "NAME": name,
+      "PASSWORD": password,
+      "MOBILE": mobile,
+    });
   }
 }
 
-class ResetPasswordAPI {
+class ChangePasswordScreenAPI extends BaseApiService {
   static const String passwordKey = "User_Reset";
 
   Future<CommonApiResponse> reset({
     required String employeeId,
     required String password,
-  }) async {
-    try {
-      final url = Uri.parse("${SAPConfig.authUrl}$passwordKey");
-      final response = await http
-          .post(
-            url,
-            headers: SAPConfig.headers,
-            body: jsonEncode({
-              "INPUT_DATA": {"APP_USR": employeeId, "PASSWORD": password},
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 200) {
-        return CommonApiResponse.fromJson(
-          jsonDecode(response.body) as Map<String, dynamic>,
-        );
-      }
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "message": response.body.isNotEmpty
-            ? "[${response.statusCode}] ${response.body}"
-            : "Connectivity Failed",
-      });
-    } on TimeoutException {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 408,
-        "message": "Request timeout. Please try again.",
-      });
-    } catch (e) {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 500,
-        "message": e.toString(),
-      });
-    }
+  }) {
+    return postRequest(passwordKey, "", {
+      "APP_USR": employeeId,
+      "PASSWORD": password,
+    });
   }
 }
 
-class ProductionConfirmationAPI {
+class ProductionConfirmationScreenAPI extends BaseApiService {
   static const String huScanKey = "ZFTME_HU_SCAN";
   static const String huConfirmKey = "ZFTME_PROD_RECEIPT";
 
   Future<CommonApiResponse> confirm({
     required List<Map<String, String>> aufnrList,
-  }) async {
-    try {
-      final url = Uri.parse(SAPConfig.baseUrl);
-
-      final response = await http
-          .post(
-            url,
-            headers: SAPConfig.headers,
-            body: jsonEncode({
-              huConfirmKey: {
-                "INPUT_DATA": {
-                  "HUNO": " ",
-                  "AUFNR": {"item": aufnrList},
-                },
-              },
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 200) {
-        return CommonApiResponse.fromJson(
-          jsonDecode(response.body) as Map<String, dynamic>,
-        );
-      }
-
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "message": response.body.isNotEmpty
-            ? "[${response.statusCode}] ${response.body}"
-            : "Connectivity Failed",
-      });
-    } on TimeoutException {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 408,
-        "message": "Request timeout. Please try again.",
-      });
-    } catch (e) {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 500,
-        "message": e.toString(),
-      });
-    }
+  }) {
+    return postRequest("", huConfirmKey, {
+      "INPUT_DATA": {
+        "HUNO": " ",
+        "AUFNR": {"item": aufnrList},
+      },
+    });
   }
 
   Future<CommonApiResponse> scan({
     required String barcode,
     bool delete = false,
-  }) async {
-    try {
-      final url = Uri.parse(SAPConfig.baseUrl);
-      final response = await http
-          .post(
-            url,
-            headers: SAPConfig.headers,
-            body: jsonEncode({
-              huScanKey: {"BARCODE": barcode, "DELETE": delete ? "X" : ""},
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 200) {
-        return CommonApiResponse.fromJson(
-          jsonDecode(response.body) as Map<String, dynamic>,
-        );
-      }
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "message": response.body.isNotEmpty
-            ? "[${response.statusCode}] ${response.body}"
-            : "Connectivity Failed",
-      });
-    } on TimeoutException {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 408,
-        "message": "Request timeout. Please try again.",
-      });
-    } catch (e) {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 500,
-        "message": e.toString(),
-      });
-    }
+  }) {
+    return postRequest("", huScanKey, {
+      "BARCODE": barcode,
+      "DELETE": delete ? "X" : "",
+    });
   }
 }
 
-class BarcodeInfoAPI {
+class BarcodeInfoScreenAPI extends BaseApiService {
   static const String barcodeInfoKey = "ZFTME_BARCODE_DET";
 
   Future<CommonApiResponse> info({
     required String barcode,
     bool delete = false,
-  }) async {
-    try {
-      final url = Uri.parse(SAPConfig.baseUrl);
-      final response = await http
-          .post(
-            url,
-            headers: SAPConfig.headers,
-            body: jsonEncode({
-              barcodeInfoKey: {
-                "INPUT_DATA": {
-                  "APP_USR": "",
-                  "HUNO": barcode,
-                  "AUFNR": "",
-                  "MATNR": "",
-                  "VBELN": "",
-                  "BARCODE": "",
-                  "DELIVERY": "",
-                },
-              },
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 200) {
-        return CommonApiResponse.fromJson(
-          jsonDecode(response.body) as Map<String, dynamic>,
-        );
-      }
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "message": response.body.isNotEmpty
-            ? "[${response.statusCode}] ${response.body}"
-            : "Connectivity Failed",
-      });
-    } on TimeoutException {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 408,
-        "message": "Request timeout. Please try again.",
-      });
-    } catch (e) {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 500,
-        "message": e.toString(),
-      });
-    }
+  }) {
+    return postRequest("", barcodeInfoKey, {
+      "INPUT_DATA": {"HUNO": barcode},
+    });
   }
 }
 
-class DispatchAPI {
+class DispatchSOScreenAPI extends BaseApiService {
   static const String soListKey = "ZFTME_SALESORD_LIST";
   static const String soInfoKey = "ZFTME_SALESORD_DET";
   static const String dispatchScanKey = "ZFTME_HU_DIS_SCAN";
-  static const String soConfirmKey = "ZFTME_OUTB_DELIVERY";
+  static const String dispatchConfirmKey = "ZFTME_OUTB_DELIVERY";
 
-  Future<CommonApiResponse> soList({required String appUser}) async {
-    try {
-      final url = Uri.parse(SAPConfig.baseUrl);
-      final response = await http
-          .post(
-            url,
-            headers: SAPConfig.headers,
-            body: jsonEncode({
-              soListKey: {
-                "INPUT_DATA": {"APP_USR": appUser},
-              },
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 200) {
-        return CommonApiResponse.fromJson(
-          jsonDecode(response.body) as Map<String, dynamic>,
-        );
-      }
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "message": response.body.isNotEmpty
-            ? "[${response.statusCode}] ${response.body}"
-            : "Connectivity Failed",
-      });
-    } on TimeoutException {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 408,
-        "message": "Request timeout. Please try again.",
-      });
-    } catch (e) {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 500,
-        "message": e.toString(),
-      });
-    }
+  Future<CommonApiResponse> soList({required String appUser}) {
+    return postRequest("", soListKey, {
+      "INPUT_DATA": {"APP_USR": appUser},
+    });
   }
 
-  Future<CommonApiResponse> soInfo({required String soNo}) async {
-    try {
-      final url = Uri.parse(SAPConfig.baseUrl);
-      final response = await http
-          .post(
-            url,
-            headers: SAPConfig.headers,
-            body: jsonEncode({
-              soInfoKey: {
-                "INPUT_DATA": {"VBELN": soNo},
-              },
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 200) {
-        return CommonApiResponse.fromJson(
-          jsonDecode(response.body) as Map<String, dynamic>,
-        );
-      }
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "message": response.body.isNotEmpty
-            ? "[${response.statusCode}] ${response.body}"
-            : "Connectivity Failed",
-      });
-    } on TimeoutException {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 408,
-        "message": "Request timeout. Please try again.",
-      });
-    } catch (e) {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 500,
-        "message": e.toString(),
-      });
-    }
+  Future<CommonApiResponse> soInfo({required String soNo}) {
+    return postRequest("", soInfoKey, {
+      "INPUT_DATA": {"VBELN": soNo},
+    });
   }
 
-  Future<CommonApiResponse> soScan({required String soNo}) async {
-    try {
-      final url = Uri.parse(SAPConfig.baseUrl);
-      final response = await http
-          .post(
-            url,
-            headers: SAPConfig.headers,
-            body: jsonEncode({
-              dispatchScanKey: {"BARCODE": soNo, "DELETE": ""},
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 200) {
-        return CommonApiResponse.fromJson(
-          jsonDecode(response.body) as Map<String, dynamic>,
-        );
-      }
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "message": response.body.isNotEmpty
-            ? "[${response.statusCode}] ${response.body}"
-            : "Connectivity Failed",
-      });
-    } on TimeoutException {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 408,
-        "message": "Request timeout. Please try again.",
-      });
-    } catch (e) {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 500,
-        "message": e.toString(),
-      });
-    }
+  Future<CommonApiResponse> dispatchScan({
+    required String soNo,
+    required String posNr,
+    required String qty,
+    required String barCode,
+  }) {
+    return postRequest("", dispatchScanKey, {
+      "BARCODE": "$barCode",
+      "IV_VBELN": "$soNo",
+      "IV_POSNR": "$posNr",
+      "IV_QTY": "$qty",
+      "DELETE": "",
+    });
   }
 
-  Future<CommonApiResponse> soConfirm({required String soNo}) async {
-    try {
-      final url = Uri.parse(SAPConfig.baseUrl);
-      final response = await http
-          .post(
-            url,
-            headers: SAPConfig.headers,
-            body: jsonEncode({
-              dispatchScanKey: {
-                "INPUT_DATA": {"VBELN": soNo},
-              },
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
+  Future<CommonApiResponse> dispatchDeleteScan({
+    required String soNo,
+    required String posNr,
+    required String barCode,
+  }) {
+    return postRequest("", dispatchScanKey, {
+      "BARCODE": "$barCode",
+      "IV_VBELN": "$soNo",
+      "IV_POSNR": "$posNr",
+      "IV_QTY": "",
+      "DELETE": "X",
+    });
+  }
 
-      if (response.statusCode == 200) {
-        return CommonApiResponse.fromJson(
-          jsonDecode(response.body) as Map<String, dynamic>,
-        );
-      }
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "message": response.body.isNotEmpty
-            ? "[${response.statusCode}] ${response.body}"
-            : "Connectivity Failed",
-      });
-    } on TimeoutException {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 408,
-        "message": "Request timeout. Please try again.",
-      });
-    } catch (e) {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 500,
-        "message": e.toString(),
-      });
-    }
+  Future<CommonApiResponse> soConfirm({required String soNo}) {
+    return postRequest("", dispatchScanKey, {
+      "INPUT_DATA": {"VBELN": soNo},
+    });
   }
 }
 
-class ReworkAPI {
-  static const String barcodeInfoKey = "ZFTME_BARCODE_DET";
-  static const String reworkKey = "ZFTME_HU_PROCESS";
+class DispatchDeliveryScreenAPI extends BaseApiService {
+  static const String soListKey = "ZFTME_DELI_LIST";
+  static const String soInfoKey = "ZFTME_PGI_DET";
+  static const String dispatchScanKey = "ZFTME_PGI_SCAN";
+  static const String dispatchConfirmKey = "ZFTME_PGI";
 
-  Future<CommonApiResponse> soInfo({required String soNo}) async {
-    try {
-      final url = Uri.parse(SAPConfig.baseUrl);
-      final response = await http
-          .post(
-            url,
-            headers: SAPConfig.headers,
-            body: jsonEncode({
-              barcodeInfoKey: {
-                "INPUT_DATA": {"HUNO": soNo},
-              },
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 200) {
-        return CommonApiResponse.fromJson(
-          jsonDecode(response.body) as Map<String, dynamic>,
-        );
-      }
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "message": response.body.isNotEmpty
-            ? "[${response.statusCode}] ${response.body}"
-            : "Connectivity Failed",
-      });
-    } on TimeoutException {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 408,
-        "message": "Request timeout. Please try again.",
-      });
-    } catch (e) {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 500,
-        "message": e.toString(),
-      });
-    }
+  Future<CommonApiResponse> soList({required String appUser}) {
+    return postRequest("", soListKey, {
+      "INPUT_DATA": {"APP_USR": appUser},
+    });
   }
 
-  Future<CommonApiResponse> rework({required String barcode}) async {
-    try {
-      final url = Uri.parse(SAPConfig.baseUrl);
-      final response = await http
-          .post(
-            url,
-            headers: SAPConfig.headers,
-            body: jsonEncode({
-              reworkKey: {
-                "IV_ACTION": "REWK",
-                "INPUT_DATA": {"BARCODE": barcode},
-              },
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
+  Future<CommonApiResponse> soInfo({required String soNo}) {
+    return postRequest("", soInfoKey, {
+      "INPUT_DATA": {"VBELN": soNo},
+    });
+  }
 
-      if (response.statusCode == 200) {
-        return CommonApiResponse.fromJson(
-          jsonDecode(response.body) as Map<String, dynamic>,
-        );
-      }
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "message": response.body.isNotEmpty
-            ? "[${response.statusCode}] ${response.body}"
-            : "Connectivity Failed",
-      });
-    } on TimeoutException {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 408,
-        "message": "Request timeout. Please try again.",
-      });
-    } catch (e) {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 500,
-        "message": e.toString(),
-      });
-    }
+  Future<CommonApiResponse> dispatchScan({
+    required String soNo,
+    required String posNr,
+    required String qty,
+    required String barCode,
+  }) {
+    return postRequest("", dispatchScanKey, {
+      "INPUT_DATA": {
+        "BARCODE": "$barCode",
+        "VBELN": "$soNo",
+        "POSNR": "$posNr",
+        "QTY": "$qty",
+        "DELETE": "",
+      },
+    });
+  }
+
+  Future<CommonApiResponse> dispatchDeleteScan({
+    required String soNo,
+    required String posNr,
+    required String barCode,
+  }) {
+    return postRequest("", dispatchScanKey, {
+      "INPUT_DATA": {
+        "BARCODE": "$barCode",
+        "VBELN": "$soNo",
+        "POSNR": "$posNr",
+        "QTY": "",
+        "DELETE": "X",
+      },
+    });
+  }
+
+  Future<CommonApiResponse> soConfirm({required String soNo}) {
+    return postRequest("", dispatchScanKey, {
+      "INPUT_DATA": {"DELIVERY": soNo},
+    });
   }
 }
 
-class ScrapAPI {
+class ReworkScreenAPI extends BaseApiService {
   static const String barcodeInfoKey = "ZFTME_BARCODE_DET";
   static const String reworkKey = "ZFTME_HU_PROCESS";
 
-  Future<CommonApiResponse> soInfo({required String soNo}) async {
-    try {
-      final url = Uri.parse(SAPConfig.baseUrl);
-      final response = await http
-          .post(
-            url,
-            headers: SAPConfig.headers,
-            body: jsonEncode({
-              barcodeInfoKey: {
-                "INPUT_DATA": {"HUNO": soNo},
-              },
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 200) {
-        return CommonApiResponse.fromJson(
-          jsonDecode(response.body) as Map<String, dynamic>,
-        );
-      }
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "message": response.body.isNotEmpty
-            ? "[${response.statusCode}] ${response.body}"
-            : "Connectivity Failed",
-      });
-    } on TimeoutException {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 408,
-        "message": "Request timeout. Please try again.",
-      });
-    } catch (e) {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 500,
-        "message": e.toString(),
-      });
-    }
+  Future<CommonApiResponse> soInfo({required String soNo}) {
+    return postRequest("", barcodeInfoKey, {
+      "INPUT_DATA": {"HUNO": soNo},
+    });
   }
 
-  Future<CommonApiResponse> scrap({required String barcode}) async {
-    try {
-      final url = Uri.parse(SAPConfig.baseUrl);
-      final response = await http
-          .post(
-            url,
-            headers: SAPConfig.headers,
-            body: jsonEncode({
-              reworkKey: {
-                "IV_ACTION": "SCR",
-                "INPUT_DATA": {"BARCODE": barcode},
-              },
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
+  Future<CommonApiResponse> rework({required String barcode}) {
+    return postRequest("", reworkKey, {
+      "IV_ACTION": "REWK",
+      "INPUT_DATA": {"BARCODE": barcode},
+    });
+  }
+}
 
-      if (response.statusCode == 200) {
-        return CommonApiResponse.fromJson(
-          jsonDecode(response.body) as Map<String, dynamic>,
-        );
-      }
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "message": response.body.isNotEmpty
-            ? "[${response.statusCode}] ${response.body}"
-            : "Connectivity Failed",
-      });
-    } on TimeoutException {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 408,
-        "message": "Request timeout. Please try again.",
-      });
-    } catch (e) {
-      return CommonApiResponse.fromJson({
-        "status": "E",
-        "statusCode": 500,
-        "message": e.toString(),
-      });
-    }
+class ScrapScreenAPI extends BaseApiService {
+  static const String barcodeInfoKey = "ZFTME_BARCODE_DET";
+  static const String reworkKey = "ZFTME_HU_PROCESS";
+
+  Future<CommonApiResponse> soInfo({required String soNo}) {
+    return postRequest("", barcodeInfoKey, {
+      "INPUT_DATA": {"HUNO": soNo},
+    });
+  }
+
+  Future<CommonApiResponse> scrap({required String barcode}) {
+    return postRequest("", reworkKey, {
+      "IV_ACTION": "SCR",
+      "INPUT_DATA": {"BARCODE": barcode},
+    });
   }
 }

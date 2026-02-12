@@ -19,7 +19,8 @@ class DispatchSOState extends State<DispatchSOScreen> {
   List<String> soList = [];
 
   final iptSono = TextEditingController(text: "0000401692");
-  final api = DispatchAPI();
+  final iptHuno = TextEditingController();
+  final api = DispatchSOScreenAPI();
 
   Future<void> _loadEmployee() async {
     final id = await SessionManager.getEmployeeId();
@@ -32,6 +33,110 @@ class DispatchSOState extends State<DispatchSOScreen> {
     if (mounted) setState(() => _isLoading = false);
   }
 
+  void _openHunoPopup(int idx) {
+    setState(() => activeItemId = idx);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final hunoList = scanSessions[idx]["huno"] as List;
+
+            return AlertDialog(
+              title: const Text("Scanned HUNO"),
+
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    /// 🔤 Input + Add Button
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: iptHuno,
+                            decoration: const InputDecoration(
+                              hintText: "Enter HUNO",
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: _isLoading ? null : _getScanInfo,
+                          child: const Text("Add"),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    /// 📋 Scrollable list (compact height)
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: hunoList.length,
+                        itemBuilder: (_, i) {
+                          final huno = hunoList[i];
+
+                          return ListTile(
+                            title: Text(huno),
+                            leading: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () async {
+                                final hunoToDelete = hunoList[i];
+
+                                // Optional: show loader dialog
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (_) => const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+
+                                final result = await api.dispatchDeleteScan(
+                                  soNo: scanSessions[idx]["VBELN"],
+                                  posNr: scanSessions[idx]["POSNR"],
+                                  barCode: hunoToDelete,
+                                );
+
+                                Navigator.pop(context); // close loader
+
+                                if (result.status == "S") {
+                                  setDialogState(() {
+                                    hunoList.removeAt(i);
+                                  });
+                                  setState(() {}); // refresh main screen
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(result.message)),
+                                  );
+                                }
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Close"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -42,20 +147,31 @@ class DispatchSOState extends State<DispatchSOScreen> {
       if (!mounted || _isLoading) return;
       if (ignoreOnSaturate()) return;
       if (_lock) {
-        await _getScanInfo(sono: qrCode);
+        await _getScanInfo(huno: qrCode);
       } else {
-        await _getSOInfo(sono: qrCode);
+        await _getSOInfo(soNo: qrCode);
       }
     });
   }
 
-  Future<void> _getSOInfo({String sono = ""}) async {
-    setState(() => _isLoading = true);
-    if (sono == "") {
-      sono = iptSono.text;
-    }
+  Future<void> _getSOInfo({String soNo = ""}) async {
+    setState(() {
+      _isLoading = true;
+    });
 
-    final result = await api.soInfo(soNo: sono);
+    if (soNo.isNotEmpty) {
+      setState(() {
+        iptSono.text = soNo;
+      });
+    }
+    await Future.delayed(Duration.zero);
+    if (iptSono.text.isEmpty) {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+    final result = await api.soInfo(soNo: iptSono.text);
     if (result.status != "S") {
       DialogHelper.showMessage(
         context,
@@ -64,45 +180,84 @@ class DispatchSOState extends State<DispatchSOScreen> {
       );
     } else {
       scanSessions = result.soInfo.map((e) {
-        return {...e, "barcode": <String>[], "huno": <String>[]};
+        final rawBarcodeList = e["BARCODE_LIST"];
+
+        // Handle both "" and proper object cases safely
+        final List<Map<String, dynamic>> items =
+            rawBarcodeList is Map && rawBarcodeList["item"] is List
+            ? List<Map<String, dynamic>>.from(rawBarcodeList["item"])
+            : [];
+
+        // Optional but recommended: remove duplicate barcodes
+        final uniqueItems = {
+          for (var i in items) i["BARCODE"]: i,
+        }.values.toList();
+
+        // Build HUNO list from barcode entries
+        final hunoList = uniqueItems
+            .map((i) => i["HUNO"].toString())
+            .toSet()
+            .toList();
+
+        return {
+          ...e,
+          "BARCODE_LIST": {"item": uniqueItems},
+          "huno": hunoList,
+        };
       }).toList();
+
       setState(() {
         _lock = true;
-        iptSono.text = sono;
       });
     }
     if (mounted) setState(() => _isLoading = false);
   }
 
-  Future<void> _getScanInfo({String sono = ""}) async {
+  Future<void> _getScanInfo({String huno = ""}) async {
     setState(() => _isLoading = true);
     final item = scanSessions[activeItemId!];
     final int dispatchQty = double.parse(item["ZMENG"].toString()).toInt();
 
     try {
-      final result = await api.soScan(soNo: sono);
-
+      if (huno == "") {
+        huno = iptHuno.text;
+      }
+      final result = await api.dispatchScan(
+        soNo: item["VBELN"],
+        posNr: item["POSNR"],
+        qty: item["ZMENG"],
+        barCode: huno,
+      );
       if (result.status != "S") {
         DialogHelper.showMessage(
           context,
           title: "Error",
           message: result.message,
         );
-        return;
-      }
-      final barcodes = item["barcodes"] ?? [];
-      if ((result.barcode.length + barcodes.length) <= dispatchQty) {
-        setState(() {
-          item["barcodes"].add(result.barcode);
-          item["hunos"].add(result.huno);
-        });
       } else {
-        DialogHelper.showMessage(
-          context,
-          title: "Error",
-          message: "Quantity Exceeds Max Capacity",
-        );
-        return;
+        final barcodes = item["BARCODE_LIST"]["item"] ?? [];
+        if ((result.barcode.length + barcodes.length) <= dispatchQty) {
+          setState(() {
+            final existing = item["BARCODE_LIST"]["item"] as List;
+
+            for (final barCode in result.barcode) {
+              if (!existing.any((e) => e["BARCODE"] == barCode)) {
+                existing.add({"HUNO": result.huno, "BARCODE": barCode});
+              }
+            }
+
+            if (!item["huno"].contains(result.huno)) {
+              item["huno"].add(result.huno);
+            }
+          });
+        } else {
+          DialogHelper.showMessage(
+            context,
+            title: "Error",
+            message: "Quantity Exceeds Max Capacity",
+          );
+          return;
+        }
       }
     } catch (e) {
       DialogHelper.showMessage(context, title: "Error", message: e.toString());
@@ -113,7 +268,7 @@ class DispatchSOState extends State<DispatchSOScreen> {
   bool ignoreOnSaturate() {
     final item = scanSessions[activeItemId!];
     final int dispatchQty = double.parse(item["ZMENG"].toString()).toInt();
-    final barcodes = item["barcodes"] ?? [];
+    final barcodes = item["BARCODE_LIST"]["item"] ?? [];
     if (barcodes.length >= dispatchQty) {
       DialogHelper.showMessage(
         context,
@@ -129,9 +284,11 @@ class DispatchSOState extends State<DispatchSOScreen> {
     setState(() => _isLoading = true);
 
     try {
-      if (sono == "") {
-        sono = iptSono.text;
+      if (sono.isNotEmpty) {
+        iptSono.text = sono;
       }
+      if (iptSono.text.isEmpty) return;
+
       final result = await api.soConfirm(soNo: sono);
       if (result.status == "S") {
         setState(() {
@@ -152,6 +309,10 @@ class DispatchSOState extends State<DispatchSOScreen> {
               behavior: SnackBarBehavior.floating,
               elevation: 0,
             ),
+          );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => Dashboard()),
           );
         }
       } else {
@@ -186,10 +347,10 @@ class DispatchSOState extends State<DispatchSOScreen> {
     super.dispose();
   }
 
-  Widget _buildProgress(int id, Map item) {
-    final item = scanSessions[id];
+  Widget _buildProgress(int idx) {
+    final item = scanSessions[idx];
     final dispatchQty = double.parse(item["ZMENG"].toString()).toInt();
-    final barcodes = item["barcodes"] ?? [];
+    final barcodes = item["BARCODE_LIST"]["item"] ?? [];
     double progress = 0.0;
     if (barcodes.length > 0) {
       progress = barcodes.length / dispatchQty;
@@ -201,11 +362,14 @@ class DispatchSOState extends State<DispatchSOScreen> {
         SizedBox(
           width: 55,
           height: 55,
-          child: CircularProgressIndicator(
-            value: progress,
-            strokeWidth: 6,
-            backgroundColor: Colors.grey.shade300,
-            color: progress >= 1 ? Colors.green : Colors.blue,
+          child: GestureDetector(
+            onTap: () => _openHunoPopup(idx),
+            child: CircularProgressIndicator(
+              value: progress,
+              strokeWidth: 6,
+              backgroundColor: Colors.grey.shade300,
+              color: progress >= 1 ? Colors.green : Colors.blue,
+            ),
           ),
         ),
         Text(
@@ -309,9 +473,8 @@ class DispatchSOState extends State<DispatchSOScreen> {
                           child: Autocomplete<String>(
                             optionsBuilder: (TextEditingValue value) {
                               if (value.text.isEmpty) {
-                                return soList; // show all on focus
+                                return soList;
                               }
-
                               return soList.where(
                                 (so) => so.contains(value.text),
                               );
@@ -360,7 +523,10 @@ class DispatchSOState extends State<DispatchSOScreen> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
-                            onPressed: _isLoading ? null : _getSOInfo,
+                            onPressed: () {
+                              final sono = iptSono.text;
+                              _isLoading ? null : _getSOInfo(soNo: sono);
+                            },
                             child: const Icon(Icons.qr_code_scanner),
                           ),
                         ),
@@ -487,7 +653,7 @@ class DispatchSOState extends State<DispatchSOScreen> {
                                         ],
                                       ),
                                     ),
-                                    _buildProgress(index, session),
+                                    _buildProgress(index),
                                   ],
                                 ),
                               ),

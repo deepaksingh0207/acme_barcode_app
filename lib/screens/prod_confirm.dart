@@ -16,7 +16,7 @@ class ProdConfirmState extends State<ProdConfirmScreen> {
   final TextEditingController iptBarcode = TextEditingController(
     text: "1000000036527",
   );
-  final api = ProductionConfirmationAPI();
+  final api = ProductionConfirmationScreenAPI();
 
   @override
   void initState() {

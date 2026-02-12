@@ -13,10 +13,12 @@ class HUScanState extends State<HUScanScreen> {
   bool _isLoading = false;
   String? _huno;
   String? _aufnr;
+  String? _maktx;
+  String? _matnr;
   List<String> _respBarcodes = [];
 
   final iptBarcode = TextEditingController(text: "1000000036359");
-  final api = BarcodeInfoAPI();
+  final api = BarcodeInfoScreenAPI();
 
   @override
   void initState() {
@@ -49,6 +51,8 @@ class HUScanState extends State<HUScanScreen> {
         _respBarcodes = result.barcode;
         _huno = result.huno;
         _aufnr = result.aufnr;
+        _matnr = result.matnr;
+        _maktx = result.maktx;
       });
     } catch (e) {
       DialogHelper.showMessage(context, title: "Error", message: e.toString());
@@ -254,7 +258,9 @@ class HUScanState extends State<HUScanScreen> {
                                         ],
                                       ),
                                     ),
+                                    
                                     const SizedBox(height: 6),
+                                    
                                     RichText(
                                       text: TextSpan(
                                         style: const TextStyle(
@@ -273,6 +279,49 @@ class HUScanState extends State<HUScanScreen> {
                                         ],
                                       ),
                                     ),
+
+                                    const SizedBox(height: 6),
+                                    
+                                    RichText(
+                                      text: TextSpan(
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 14,
+                                        ),
+                                        children: [
+                                          const TextSpan(
+                                            text: "Material Code: ",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                          TextSpan(text: _matnr),
+                                        ],
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 6),
+                                    
+                                    RichText(
+                                      text: TextSpan(
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 14,
+                                        ),
+                                        children: [
+                                          const TextSpan(
+                                            text: "Material Description: ",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                          TextSpan(text: _maktx),
+                                        ],
+                                      ),
+                                    ),
+
                                   ],
                                 ),
 

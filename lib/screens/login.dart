@@ -15,7 +15,7 @@ class LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   final iptEmployeeId = TextEditingController(text: "1992");
   final iptPassword = TextEditingController(text: "12345678");
-  final api = LoginAPI();
+  final api = LoginScreenAPI();
 
   @override
   Widget build(BuildContext context) {
