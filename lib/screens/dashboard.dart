@@ -3,6 +3,7 @@ import 'change_password.dart';
 import 'package:flutter/material.dart';
 import 'package:acme/screens/scrap.dart';
 import 'package:acme/screens/rework.dart';
+import 'package:acme/screens/replace.dart';
 import 'package:acme/screens/profile.dart';
 import 'package:acme/screens/dispatch_so.dart';
 import 'package:acme/screens/barcode_info.dart';
@@ -90,7 +91,7 @@ class DashboardState extends State<Dashboard> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => DispatchDeliveryScreen()),
+                  MaterialPageRoute(builder: (_) => ReplaceScreen()),
                 );
               },
             ),

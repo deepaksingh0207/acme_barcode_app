@@ -47,22 +47,33 @@ class LoginScreenState extends State<LoginScreen> {
                           ),
                           SizedBox(height: 10),
                           Text(
-                            "Login",
+                            "Log in to access your account",
                             style: TextStyle(
-                              fontSize: 28,
+                              fontSize: 24,
                               fontWeight: FontWeight.bold,
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-
-                          SizedBox(height: 10),
-                          Text(
-                            "Enter your email and password",
-                            style: TextStyle(color: Colors.grey),
-                            textAlign: TextAlign.center,
+                            textAlign: TextAlign.left,
                           ),
 
                           SizedBox(height: 30),
+
+                          Row(
+                            children: const [
+                              Icon(
+                                Icons.badge_outlined,
+                                size: 18,
+                                color: Colors.grey,
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                "Employee ID",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
 
                           TextField(
                             controller: iptEmployeeId,
@@ -71,7 +82,7 @@ class LoginScreenState extends State<LoginScreen> {
                               FilteringTextInputFormatter.digitsOnly,
                             ],
                             decoration: InputDecoration(
-                              labelText: "Employee ID",
+                              labelText: "Enter your Employee ID",
                               enabledBorder: UnderlineInputBorder(
                                 borderSide: BorderSide(color: Colors.grey),
                               ),
@@ -84,13 +95,27 @@ class LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
 
-                          SizedBox(height: 15),
+                          SizedBox(height: 30),
+
+                          Row(
+                            children: const [
+                              Icon(Icons.lock, size: 18, color: Colors.grey),
+                              SizedBox(width: 6),
+                              Text(
+                                "Password",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
 
                           TextField(
                             controller: iptPassword,
                             obscureText: _obscurePassword,
                             decoration: InputDecoration(
-                              labelText: "Password",
+                              labelText: "Enter your Password",
                               enabledBorder: UnderlineInputBorder(
                                 borderSide: BorderSide(color: Colors.grey),
                               ),
@@ -115,12 +140,13 @@ class LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
 
-                          SizedBox(height: 10),
-
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
-                              child: Text("Forgot Password?"),
+                              child: Text(
+                                "Forgot Password?",
+                                style: TextStyle(color: Color(0xFF2F82C3)),
+                              ),
                               onPressed: () {
                                 Navigator.push(
                                   context,
@@ -132,17 +158,11 @@ class LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
 
-                          SizedBox(height: 20),
+                          SizedBox(height: 50),
 
                           SizedBox(
-                            height: 50,
+                            height: 80,
                             child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF2F82C3),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
                               onPressed: _isLoading
                                   ? null
                                   : () async {
@@ -206,26 +226,64 @@ class LoginScreenState extends State<LoginScreen> {
                                         setState(() => _isLoading = false);
                                       }
                                     },
-                              child: Text(
-                                "Login",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 70,
+                                  vertical: 10,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                              ),
+                              child: Ink(
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Color(0xFF2F82C3),
+                                      Color(0xFF1DD47D),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Container(
+                                  alignment: Alignment.center,
+                                  child: const Text(
+                                    "LOGIN",
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
 
-                          SizedBox(height: 20),
+                          SizedBox(height: 30),
+
+                          Text(
+                            "Don’t have an account?",
+                            style: TextStyle(
+                              fontSize: 20,
+                              color: Color(0xFF606060),
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
 
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text("Don’t have an account? "),
                               GestureDetector(
                                 child: Text(
-                                  "Sign up",
+                                  "CREATE ACCOUNT",
                                   style: TextStyle(
+                                    fontSize: 20,
                                     color: Colors.indigo,
                                     fontWeight: FontWeight.bold,
                                   ),

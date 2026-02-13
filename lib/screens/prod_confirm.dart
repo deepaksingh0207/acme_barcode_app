@@ -78,6 +78,8 @@ class ProdConfirmState extends State<ProdConfirmScreen> {
         "barcodes": result.barcode,
         "huno": result.huno,
         "aufnr": result.aufnr,
+        "maktx": result.maktx,
+        "matnr": result.matnr,
       });
     } catch (e) {
       DialogHelper.showMessage(context, title: "Error", message: e.toString());
@@ -371,7 +373,11 @@ class ProdConfirmState extends State<ProdConfirmScreen> {
                                           ),
                                         ),
                                         const SizedBox(height: 4),
-                                        Text("AUFNR: ${session["aufnr"]}"),
+                                        Text("ORDER NO.: ${session["aufnr"]}"),
+                                        const SizedBox(height: 4),
+                                        Text("MATERIAL CODE: ${session["matnr"]}"),
+                                        const SizedBox(height: 4),
+                                        Text("MATERIAL DESCRIPTION: ${session["maktx"]}"),
                                       ],
                                     ),
                                     CircleAvatar(

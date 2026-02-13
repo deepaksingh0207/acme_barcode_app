@@ -4,55 +4,58 @@ import 'package:acme/screens/login.dart';
 import 'package:acme/screens/dashboard.dart';
 import 'package:acme/screens/change_password.dart';
 
-class ReworkScreen extends StatefulWidget {
+class ReplaceScreen extends StatefulWidget {
   @override
-  ReworkState createState() => ReworkState();
+  ReplaceState createState() => ReplaceState();
 }
 
-class ReworkState extends State<ReworkScreen> {
+class ReplaceState extends State<ReplaceScreen> {
   bool _isLoading = false;
   String? _huno;
   String? _aufnr;
-  List<Map<String, dynamic>> _respBarcodes = [];
+  String? _maktx;
+  String? _matnr;
+  String? selectedBarcode;
+  List<String> _respBarcodes = [];
 
-  final iptSono = TextEditingController(text: "1000000036359");
-  final api = ReworkScreenAPI();
+  final iptOldBarcode = TextEditingController();
+  final iptBarcode = TextEditingController();
+  final api = ReplaceScreenAPI();
 
   @override
   void initState() {
     super.initState();
 
     PM75Scanner.init((qrCode) async {
+      if (!mounted) return;
+      if (_isLoading) return;
       if (qrCode == "READ_FAIL") return;
-      if (!mounted || _isLoading) return;
-      await _getSOInfo(sono: qrCode);
+      setState(() => iptOldBarcode.text = qrCode);
+      await _getQrInfo(barCode: qrCode);
     });
   }
 
-  Future<void> _getSOInfo({String sono = ""}) async {
+  Future<void> _getQrInfo({String barCode = "", bool isDelete = false}) async {
     setState(() => _isLoading = true);
     try {
-      if (sono == "") {
-        sono = iptSono.text;
+      if (barCode == "") {
+        barCode = iptOldBarcode.text;
       }
-      final result = await api.soInfo(soNo: sono);
+      final result = await api.soInfo(soNo: barCode);
       if (result.status != "S") {
         DialogHelper.showMessage(
           context,
           title: "Error",
           message: result.message,
         );
-      } else {
-        setState(() {
-          _huno = result.huno;
-          _aufnr = result.aufnr;
-          iptSono.text = sono;
-
-          _respBarcodes = result.barcode.map<Map<String, dynamic>>((e) {
-            return {"value": e, "selected": false};
-          }).toList();
-        });
       }
+      setState(() {
+        _respBarcodes = result.barcode;
+        _huno = result.huno;
+        _aufnr = result.aufnr;
+        _matnr = result.matnr;
+        _maktx = result.maktx;
+      });
     } catch (e) {
       DialogHelper.showMessage(context, title: "Error", message: e.toString());
     }
@@ -62,12 +65,8 @@ class ReworkState extends State<ReworkScreen> {
   }
 
   Future<void> _confirmProduction() async {
-    final selected = _respBarcodes.firstWhere(
-      (e) => e["selected"] == true,
-      orElse: () => {},
-    );
-
-    if (selected.isEmpty) {
+    if (iptBarcode.text == "") return;
+    if (selectedBarcode!.isEmpty) {
       DialogHelper.showMessage(
         context,
         title: "Warning",
@@ -75,13 +74,13 @@ class ReworkState extends State<ReworkScreen> {
       );
       return;
     }
-
-    final selectedBarcode = selected["value"];
-
     setState(() => _isLoading = true);
 
     try {
-      final result = await api.rework(barcode: selectedBarcode);
+      final result = await api.rework(
+        oldBarcode: selectedBarcode!,
+        barcode: iptBarcode.text,
+      );
 
       if (result.status == "S") {
         ScaffoldMessenger.of(
@@ -101,8 +100,65 @@ class ReworkState extends State<ReworkScreen> {
 
   @override
   void dispose() {
-    iptSono.dispose();
+    iptOldBarcode.dispose();
     super.dispose();
+  }
+
+  void _showBarcodePopup() {
+    showDialog(
+      context: context,
+      builder: (_) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text("Scanned Barcodes"),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  itemCount: _respBarcodes.length,
+                  itemBuilder: (context, i) {
+                    final item = _respBarcodes[i];
+
+                    final isSelected = selectedBarcode == item;
+
+                    return InkWell(
+                      onTap: () {
+                        setDialogState(() {
+                          selectedBarcode = item;
+                        });
+                      },
+                      child: Card(
+                        elevation: 2,
+                        color: isSelected ? Colors.indigo : Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                            horizontal: 12,
+                          ),
+                          child: Text(
+                            item,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isSelected ? Colors.white : Colors.black,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Close"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -184,7 +240,7 @@ class ReworkState extends State<ReworkScreen> {
                     SizedBox(height: 20),
 
                     Text(
-                      "Rework",
+                      "Replace",
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -199,7 +255,7 @@ class ReworkState extends State<ReworkScreen> {
                       children: [
                         Expanded(
                           child: TextField(
-                            controller: iptSono,
+                            controller: iptOldBarcode,
                             decoration: const InputDecoration(
                               labelText: "Enter / Scan Barcode",
                               enabledBorder: UnderlineInputBorder(
@@ -224,7 +280,7 @@ class ReworkState extends State<ReworkScreen> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
-                            onPressed: _isLoading ? null : _getSOInfo,
+                            onPressed: _isLoading ? null : _getQrInfo,
                             child: const Icon(Icons.qr_code_scanner),
                           ),
                         ),
@@ -235,7 +291,7 @@ class ReworkState extends State<ReworkScreen> {
 
                     if (_respBarcodes.isNotEmpty)
                       GestureDetector(
-                        // onTap: _showBarcodePopup,
+                        onTap: _showBarcodePopup,
                         child: Card(
                           elevation: 3,
                           shape: RoundedRectangleBorder(
@@ -267,7 +323,9 @@ class ReworkState extends State<ReworkScreen> {
                                         ],
                                       ),
                                     ),
+
                                     const SizedBox(height: 6),
+
                                     RichText(
                                       text: TextSpan(
                                         style: const TextStyle(
@@ -283,6 +341,48 @@ class ReworkState extends State<ReworkScreen> {
                                             ),
                                           ),
                                           TextSpan(text: _aufnr),
+                                        ],
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 6),
+
+                                    RichText(
+                                      text: TextSpan(
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 14,
+                                        ),
+                                        children: [
+                                          const TextSpan(
+                                            text: "Material Code: ",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                          TextSpan(text: _matnr),
+                                        ],
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 6),
+
+                                    RichText(
+                                      text: TextSpan(
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 14,
+                                        ),
+                                        children: [
+                                          const TextSpan(
+                                            text: "Material Description: ",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                          TextSpan(text: _maktx),
                                         ],
                                       ),
                                     ),
@@ -304,57 +404,30 @@ class ReworkState extends State<ReworkScreen> {
                         ),
                       ),
 
-                    if (_respBarcodes.isNotEmpty)
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: _respBarcodes.length,
-                          itemBuilder: (context, i) {
-                            final item = _respBarcodes[i];
+                    SizedBox(height: 50),
 
-                            return InkWell(
-                              onTap: () {
-                                setState(() {
-                                  // clear previous selection
-                                  for (var e in _respBarcodes) {
-                                    e["selected"] = false;
-                                  }
-                                  // select only this one
-                                  item["selected"] = true;
-                                });
-                              },
-                              child: Card(
-                                elevation: 2,
-                                color: item["selected"]
-                                    ? Colors.indigo.withOpacity(0.18)
-                                    : Colors.white,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                    horizontal: 12,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        item["selected"]
-                                            ? Icons.radio_button_checked
-                                            : Icons.radio_button_off,
-                                        color: item["selected"]
-                                            ? Colors.indigo
-                                            : Colors.grey,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        item["value"],
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
+                    Container(
+                      height: 1,
+                      width: double.infinity,
+                      color: Colors.grey,
+                    ),
+
+                    SizedBox(height: 10),
+
+                    Expanded(
+                      child: TextField(
+                        controller: iptBarcode,
+                        decoration: const InputDecoration(
+                          labelText: "Enter / Scan Replace Barcode",
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Colors.grey),
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Colors.indigo),
+                          ),
                         ),
                       ),
+                    ),
                   ],
                 ),
               ),
@@ -368,7 +441,7 @@ class ReworkState extends State<ReworkScreen> {
             height: 50,
             child: ElevatedButton(
               onPressed: _confirmProduction,
-              child: const Text("Post for Rework"),
+              child: const Text("Replace"),
             ),
           ),
         ),

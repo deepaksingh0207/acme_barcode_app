@@ -393,10 +393,10 @@ class DispatchSOScreenAPI extends BaseApiService {
     required String barCode,
   }) {
     return postRequest("", dispatchScanKey, {
-      "BARCODE": "$barCode",
-      "IV_VBELN": "$soNo",
-      "IV_POSNR": "$posNr",
-      "IV_QTY": "$qty",
+      "BARCODE": barCode,
+      "IV_VBELN": soNo,
+      "IV_POSNR": posNr,
+      "IV_QTY": qty,
       "DELETE": "",
     });
   }
@@ -407,9 +407,9 @@ class DispatchSOScreenAPI extends BaseApiService {
     required String barCode,
   }) {
     return postRequest("", dispatchScanKey, {
-      "BARCODE": "$barCode",
-      "IV_VBELN": "$soNo",
-      "IV_POSNR": "$posNr",
+      "BARCODE": barCode,
+      "IV_VBELN": soNo,
+      "IV_POSNR": posNr,
       "IV_QTY": "",
       "DELETE": "X",
     });
@@ -448,10 +448,10 @@ class DispatchDeliveryScreenAPI extends BaseApiService {
   }) {
     return postRequest("", dispatchScanKey, {
       "INPUT_DATA": {
-        "BARCODE": "$barCode",
-        "VBELN": "$soNo",
-        "POSNR": "$posNr",
-        "QTY": "$qty",
+        "BARCODE": barCode,
+        "VBELN": soNo,
+        "POSNR": posNr,
+        "QTY": qty,
         "DELETE": "",
       },
     });
@@ -464,9 +464,9 @@ class DispatchDeliveryScreenAPI extends BaseApiService {
   }) {
     return postRequest("", dispatchScanKey, {
       "INPUT_DATA": {
-        "BARCODE": "$barCode",
-        "VBELN": "$soNo",
-        "POSNR": "$posNr",
+        "BARCODE": barCode,
+        "VBELN": soNo,
+        "POSNR": posNr,
         "QTY": "",
         "DELETE": "X",
       },
@@ -494,6 +494,27 @@ class ReworkScreenAPI extends BaseApiService {
     return postRequest("", reworkKey, {
       "IV_ACTION": "REWK",
       "INPUT_DATA": {"BARCODE": barcode},
+    });
+  }
+}
+
+class ReplaceScreenAPI extends BaseApiService {
+  static const String barcodeInfoKey = "ZFTME_BARCODE_DET";
+  static const String reworkKey = "ZFTME_HU_PROCESS";
+
+  Future<CommonApiResponse> soInfo({required String soNo}) {
+    return postRequest("", barcodeInfoKey, {
+      "INPUT_DATA": {"HUNO": soNo},
+    });
+  }
+
+  Future<CommonApiResponse> rework({required String oldBarcode, required String barcode}) {
+    return postRequest("", reworkKey, {
+      "IV_ACTION": "RPL",
+      "INPUT_DATA": {
+            "NEW_BARCODE": oldBarcode,
+            "OLD_BARCODE": barcode
+        }
     });
   }
 }
