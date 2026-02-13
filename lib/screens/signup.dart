@@ -2,6 +2,7 @@ import 'login.dart';
 import 'package:acme/api.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class RegisterScreen extends StatefulWidget {
   @override
@@ -12,10 +13,10 @@ class RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
   final api = RegisterScreenAPI();
-  final iptEmployeeId = TextEditingController(text: "20000");
-  final iptPassword = TextEditingController(text: "12345678");
-  final iptName = TextEditingController(text: "Willam Smith");
-  final iptMobile = TextEditingController(text: "9876543210");
+  final iptEmployeeId = TextEditingController();
+  final iptPassword = TextEditingController();
+  final iptName = TextEditingController();
+  final iptMobile = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -25,19 +26,13 @@ class RegisterScreenState extends State<RegisterScreen> {
       body: Stack(
         children: [
           Positioned.fill(
-            child: Image.asset(
-              "assets/images/bg.png",
-              fit: BoxFit.cover,
-            ),
+            child: Image.asset("assets/images/bg.png", fit: BoxFit.cover),
           ),
           SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(
-                  padding: EdgeInsets.only(
-                    left: 24,
-                    right: 24,
-                  ),
+                  padding: EdgeInsets.only(left: 24, right: 24),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
                       minHeight: constraints.maxHeight,
@@ -46,14 +41,14 @@ class RegisterScreenState extends State<RegisterScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          SizedBox(height: 10),
-                          
-                          Image.asset(
-                            "assets/images/acme_dark.png",
-                            height: 180,
+                          SizedBox(height: 30),
+
+                          SvgPicture.asset(
+                            "assets/images/acme_dark.svg",
+                            height: 150,
                           ),
 
-                          SizedBox(height: 10),
+                          SizedBox(height: 50),
 
                           Text(
                             "Register",
@@ -65,7 +60,7 @@ class RegisterScreenState extends State<RegisterScreen> {
                           ),
 
                           SizedBox(height: 10),
-                          
+
                           Text(
                             "Enter your credentials to continue",
                             style: TextStyle(color: Colors.grey),
@@ -188,13 +183,12 @@ class RegisterScreenState extends State<RegisterScreen> {
                                       final password = iptPassword.text.trim();
 
                                       try {
-                                        final result =
-                                            await api.register(
-                                              name: name,
-                                              employeeId: employeeId,
-                                              mobile: mobile,
-                                              password: password,
-                                            );
+                                        final result = await api.register(
+                                          name: name,
+                                          employeeId: employeeId,
+                                          mobile: mobile,
+                                          password: password,
+                                        );
 
                                         if (result.status == "S") {
                                           ScaffoldMessenger.of(
@@ -226,8 +220,7 @@ class RegisterScreenState extends State<RegisterScreen> {
                                           DialogHelper.showMessage(
                                             context,
                                             title: "Error",
-                                            message:
-                                                result.message,
+                                            message: result.message,
                                           );
                                         }
                                       } catch (e) {

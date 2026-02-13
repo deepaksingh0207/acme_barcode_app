@@ -1,6 +1,7 @@
 import 'package:acme/api.dart';
 import 'package:flutter/material.dart';
 import 'package:acme/screens/dashboard.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class ChangePassword extends StatefulWidget {
   @override
@@ -40,10 +41,7 @@ class ChangePasswordState extends State<ChangePassword> {
       body: Stack(
         children: [
           Positioned.fill(
-            child: Image.asset(
-              "assets/images/bg.png",
-              fit: BoxFit.cover,
-            ),
+            child: Image.asset("assets/images/bg.png", fit: BoxFit.cover),
           ),
           SafeArea(
             child: LayoutBuilder(
@@ -58,12 +56,15 @@ class ChangePasswordState extends State<ChangePassword> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          SizedBox(height: 60),
-                          Image.asset(
-                            "assets/images/acme_dark.png",
-                            height: 180,
-                          ),
                           SizedBox(height: 30),
+
+                          SvgPicture.asset(
+                            "assets/images/acme_dark.svg",
+                            height: 150,
+                          ),
+
+                          SizedBox(height: 50),
+                          
                           Text(
                             "Change Password",
                             style: TextStyle(

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:acme/screens/login.dart';
 import 'package:acme/screens/dashboard.dart';
 import 'package:acme/screens/change_password.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class DispatchDeliveryScreen extends StatefulWidget {
   @override
@@ -18,7 +19,7 @@ class DispatchDeliveryState extends State<DispatchDeliveryScreen> {
   bool _lock = false;
   List<String> soList = [];
 
-  final iptSono = TextEditingController(text: "0000401692");
+  final iptSono = TextEditingController();
   final iptHuno = TextEditingController();
   final api = DispatchDeliveryScreenAPI();
 
@@ -405,7 +406,10 @@ class DispatchDeliveryState extends State<DispatchDeliveryScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Image.asset("assets/images/acme_dark.png", height: 40),
+                        SvgPicture.asset(
+                          "assets/images/acme_dark.svg",
+                          height: 50,
+                        ),
                         PopupMenuButton<String>(
                           icon: const CircleAvatar(
                             backgroundColor: Color(0xFF2F82C3),

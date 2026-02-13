@@ -2,6 +2,7 @@ import 'login.dart';
 import 'change_password.dart';
 import 'package:acme/api.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class ProfileScreen extends StatefulWidget {
   @override
@@ -54,7 +55,10 @@ class ProfileState extends State<ProfileScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Image.asset("assets/images/acme_dark.png", height: 40),
+                      SvgPicture.asset(
+                        "assets/images/acme_dark.svg",
+                        height: 50,
+                      ),
                       PopupMenuButton<String>(
                         icon: CircleAvatar(
                           backgroundColor: Color(0xFF2F82C3),

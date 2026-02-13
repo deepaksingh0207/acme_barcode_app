@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   @override
@@ -25,10 +26,7 @@ class ForgotPasswordState extends State<ForgotPasswordScreen> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(
-                  padding: EdgeInsets.only(
-                    left: 24,
-                    right: 24,
-                  ),
+                  padding: EdgeInsets.only(left: 24, right: 24),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
                       minHeight: constraints.maxHeight,
@@ -37,13 +35,14 @@ class ForgotPasswordState extends State<ForgotPasswordScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          SizedBox(height: 10),
-                          Image.asset(
-                            "assets/images/acme_dark.png",
-                            height: 180,
+                          SizedBox(height: 30),
+
+                          SvgPicture.asset(
+                            "assets/images/acme_dark.svg",
+                            height: 150,
                           ),
 
-                          SizedBox(height: 10),
+                          SizedBox(height: 50),
 
                           Text(
                             "Forgot Password",
@@ -55,7 +54,7 @@ class ForgotPasswordState extends State<ForgotPasswordScreen> {
                           ),
 
                           SizedBox(height: 10),
-                          
+
                           Text(
                             "Kindly contact SAP System Administrator to reset your password.",
                             style: TextStyle(fontSize: 18, color: Colors.grey),

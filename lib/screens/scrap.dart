@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:acme/screens/login.dart';
 import 'package:acme/screens/dashboard.dart';
 import 'package:acme/screens/change_password.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class ScrapScreen extends StatefulWidget {
   @override
@@ -16,7 +17,7 @@ class ScrapState extends State<ScrapScreen> {
   String? _aufnr;
   List<Map<String, dynamic>> _respBarcodes = [];
 
-  final iptSono = TextEditingController(text: "1000000036359");
+  final iptSono = TextEditingController();
   final api = ScrapScreenAPI();
 
   @override
@@ -134,7 +135,10 @@ class ScrapState extends State<ScrapScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Image.asset("assets/images/acme_dark.png", height: 40),
+                        SvgPicture.asset(
+                          "assets/images/acme_dark.svg",
+                          height: 50,
+                        ),
                         PopupMenuButton<String>(
                           icon: CircleAvatar(
                             backgroundColor: Color(0xFF2F82C3),

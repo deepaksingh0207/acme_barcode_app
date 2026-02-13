@@ -2,6 +2,7 @@ import 'package:acme/api.dart';
 import 'package:flutter/material.dart';
 import 'package:acme/screens/login.dart';
 import 'package:acme/screens/dashboard.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:acme/screens/change_password.dart';
 
 class HUScanScreen extends StatefulWidget {
@@ -17,7 +18,7 @@ class HUScanState extends State<HUScanScreen> {
   String? _matnr;
   List<String> _respBarcodes = [];
 
-  final iptBarcode = TextEditingController(text: "1000000036359");
+  final iptBarcode = TextEditingController();
   final api = BarcodeInfoScreenAPI();
 
   @override
@@ -124,7 +125,10 @@ class HUScanState extends State<HUScanScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Image.asset("assets/images/acme_dark.png", height: 40),
+                        SvgPicture.asset(
+                          "assets/images/acme_dark.svg",
+                          height: 50,
+                        ),
                         PopupMenuButton<String>(
                           icon: CircleAvatar(
                             backgroundColor: Color(0xFF2F82C3),
@@ -258,9 +262,9 @@ class HUScanState extends State<HUScanScreen> {
                                         ],
                                       ),
                                     ),
-                                    
+
                                     const SizedBox(height: 6),
-                                    
+
                                     RichText(
                                       text: TextSpan(
                                         style: const TextStyle(
@@ -281,7 +285,7 @@ class HUScanState extends State<HUScanScreen> {
                                     ),
 
                                     const SizedBox(height: 6),
-                                    
+
                                     RichText(
                                       text: TextSpan(
                                         style: const TextStyle(
@@ -302,7 +306,7 @@ class HUScanState extends State<HUScanScreen> {
                                     ),
 
                                     const SizedBox(height: 6),
-                                    
+
                                     RichText(
                                       text: TextSpan(
                                         style: const TextStyle(
@@ -321,7 +325,6 @@ class HUScanState extends State<HUScanScreen> {
                                         ],
                                       ),
                                     ),
-
                                   ],
                                 ),
 

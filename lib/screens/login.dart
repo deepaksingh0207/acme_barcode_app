@@ -4,6 +4,7 @@ import 'forgot_password.dart';
 import 'package:acme/api.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -13,8 +14,8 @@ class LoginScreen extends StatefulWidget {
 class LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
-  final iptEmployeeId = TextEditingController(text: "1992");
-  final iptPassword = TextEditingController(text: "12345678");
+  final iptEmployeeId = TextEditingController();
+  final iptPassword = TextEditingController();
   final api = LoginScreenAPI();
 
   @override
@@ -40,12 +41,15 @@ class LoginScreenState extends State<LoginScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          SizedBox(height: 10),
-                          Image.asset(
-                            "assets/images/acme_dark.png",
-                            height: 180,
+                          SizedBox(height: 30),
+                          
+                          SvgPicture.asset(
+                            "assets/images/acme_dark.svg",
+                            height: 150,
                           ),
-                          SizedBox(height: 10),
+                          
+                          SizedBox(height: 50),
+                          
                           Text(
                             "Log in to access your account",
                             style: TextStyle(
@@ -158,7 +162,7 @@ class LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
 
-                          SizedBox(height: 50),
+                          SizedBox(height: 20),
 
                           SizedBox(
                             height: 80,

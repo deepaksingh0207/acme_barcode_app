@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:acme/screens/login.dart';
 import 'package:acme/screens/dashboard.dart';
 import 'package:acme/screens/change_password.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class ProdConfirmScreen extends StatefulWidget {
   @override
@@ -13,9 +14,7 @@ class ProdConfirmState extends State<ProdConfirmScreen> {
   bool _isLoading = false;
 
   final List<Map<String, dynamic>> scanSessions = [];
-  final TextEditingController iptBarcode = TextEditingController(
-    text: "1000000036527",
-  );
+  final TextEditingController iptBarcode = TextEditingController();
   final api = ProductionConfirmationScreenAPI();
 
   @override
@@ -243,7 +242,10 @@ class ProdConfirmState extends State<ProdConfirmScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Image.asset("assets/images/acme_dark.png", height: 40),
+                        SvgPicture.asset(
+                          "assets/images/acme_dark.svg",
+                          height: 50,
+                        ),
                         PopupMenuButton<String>(
                           icon: const CircleAvatar(
                             backgroundColor: Color(0xFF2F82C3),
@@ -375,9 +377,13 @@ class ProdConfirmState extends State<ProdConfirmScreen> {
                                         const SizedBox(height: 4),
                                         Text("ORDER NO.: ${session["aufnr"]}"),
                                         const SizedBox(height: 4),
-                                        Text("MATERIAL CODE: ${session["matnr"]}"),
+                                        Text(
+                                          "MATERIAL CODE: ${session["matnr"]}",
+                                        ),
                                         const SizedBox(height: 4),
-                                        Text("MATERIAL DESCRIPTION: ${session["maktx"]}"),
+                                        Text(
+                                          "MATERIAL DESCRIPTION: ${session["maktx"]}",
+                                        ),
                                       ],
                                     ),
                                     CircleAvatar(
