@@ -241,7 +241,7 @@ class DashboardState extends State<Dashboard> {
                                       width: double.infinity,
                                       height: 50,
                                       child: Image.asset(
-                                        "assets/images/barcode-scanner.png",
+                                        "assets/images/barcode-informantion.png",
                                         fit: BoxFit.contain,
                                       ),
                                     ),
@@ -284,8 +284,8 @@ class DashboardState extends State<Dashboard> {
                                       width: double.infinity,
                                       height: 50,
                                       child: Image.asset(
-                                        "assets/images/barcode-scanner.png",
-                                        fit: BoxFit.contain,
+                                        "assets/images/sales-return.png",
+                                        height: 50,
                                       ),
                                     ),
                                     SizedBox(height: 10),
@@ -331,7 +331,7 @@ class DashboardState extends State<Dashboard> {
                                       width: double.infinity,
                                       height: 50,
                                       child: Image.asset(
-                                        "assets/images/manufacturing.png",
+                                        "assets/images/production-confirm.png",
                                         fit: BoxFit.contain,
                                       ),
                                     ),
@@ -373,7 +373,7 @@ class DashboardState extends State<Dashboard> {
                                       width: double.infinity,
                                       height: 50,
                                       child: Image.asset(
-                                        "assets/images/dispatch.png",
+                                        "assets/images/delivery.png",
                                         fit: BoxFit.contain,
                                       ),
                                     ),
@@ -415,7 +415,7 @@ class DashboardState extends State<Dashboard> {
                                       width: double.infinity,
                                       height: 50,
                                       child: Image.asset(
-                                        "assets/images/dispatch.png",
+                                        "assets/images/rework.png",
                                         fit: BoxFit.contain,
                                       ),
                                     ),

@@ -103,7 +103,6 @@ class HUScanState extends State<HUScanScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => Dashboard()),
